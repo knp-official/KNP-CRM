@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
@@ -346,7 +346,6 @@ function RegisterView({ onBack }) {
         phongBan: '',
       });
       // Sign out immediately — user must login explicitly
-      const { signOut } = await import('firebase/auth');
       await signOut(auth);
       setSuccess('Tài khoản đã được tạo thành công! Vui lòng đăng nhập để tiếp tục.');
       setForm({ hoTen: '', email: '', password: '', confirm: '' });

@@ -19,53 +19,53 @@ import { useTasks } from './hooks/useTasks';
 import { useQuotes } from './hooks/useQuotes';
 import { useDebts } from './hooks/useDebts';
 
-// Tabs accessible by employee role
 const EMPLOYEE_TABS = new Set(['dashboard', 'customers', 'tasks']);
 
 function AppContent() {
   const { user, userDoc, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // ── ALL hooks must be called unconditionally (Rules of Hooks) ──
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
-  const { contacts, addContact, updateContact, deleteContact } = useContacts();
+  const { contacts, addContact, updateContact, deleteContact }     = useContacts();
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
-  const { tasks, addTask, updateTask, deleteTask } = useTasks();
-  const { quotes, addQuote, updateQuote, deleteQuote } = useQuotes();
-  const { debts, addDebt, updateDebt, deleteDebt } = useDebts();
+  const { tasks, addTask, updateTask, deleteTask }                 = useTasks();
+  const { quotes, addQuote, updateQuote, deleteQuote }             = useQuotes();
+  const { debts, addDebt, updateDebt, deleteDebt }                 = useDebts();
 
+  // Derive auth-dependent values safely with optional chaining
+  const role        = userDoc?.vaiTro || 'employee';
+  const myEmployee  = employees.find(e => e.email === (userDoc?.email || ''));
+  const myEmployeeId = myEmployee?.id;
+
+  const { notifications, readIds, unreadCount, markAllRead, markRead } = useNotifications({
+    tasks, employees, customers,
+    myEmployeeId,
+    role,
+    userId: userDoc?.uid || userDoc?.id || 'anon',
+  });
+
+  // ── Conditional renders AFTER all hooks ────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Đang tải...</p>
+      <div style={{ minHeight: '100vh', backgroundColor: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <svg style={{ animation: 'spin 0.8s linear infinite' }} width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F15A22" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" opacity="0.2"/>
+            <path d="M3 12a9 9 0 0 1 9-9"/>
+          </svg>
+          <p style={{ color: '#888', fontSize: '14px', margin: 0 }}>Đang tải...</p>
         </div>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
   if (!user || !userDoc) return <LoginPage />;
 
-  const role = userDoc.vaiTro || 'employee'; // 'admin' | 'manager' | 'employee'
-  const canDelete = role === 'admin';
-
-  // Guard: employee cannot access restricted tabs
-  const currentTab = role === 'employee' && !EMPLOYEE_TABS.has(activeTab) ? 'dashboard' : activeTab;
-
-  // For employee role: only show their own tasks
-  const myEmployee = employees.find(e => e.email === userDoc.email);
-  const myEmployeeId = myEmployee?.id;
-
-  // Notifications
-  const { notifications, readIds, unreadCount, markAllRead, markRead } = useNotifications({
-    tasks, employees, customers,
-    myEmployeeId,
-    role,
-    userId: userDoc.uid || userDoc.id,
-  });
-
-  // Wrap delete functions — pass undefined when not allowed (hides delete UI in pages)
-  const guard = fn => (canDelete ? fn : undefined);
+  const canDelete  = role === 'admin';
+  const currentTab = (role === 'employee' && !EMPLOYEE_TABS.has(activeTab)) ? 'dashboard' : activeTab;
+  const guard      = fn => (canDelete ? fn : undefined);
 
   function handleTabChange(tab) {
     if (role === 'employee' && !EMPLOYEE_TABS.has(tab)) return;
@@ -73,9 +73,9 @@ function AppContent() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
       <Sidebar activeTab={currentTab} onTabChange={handleTabChange} role={role} />
-      <div className="flex-1 flex flex-col overflow-hidden min-h-screen">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
         <Header
           userDoc={userDoc}
           notifications={notifications}
@@ -85,78 +85,53 @@ function AppContent() {
           onMarkRead={markRead}
           onNavigate={handleTabChange}
         />
-        <main className="flex-1 overflow-auto">
+        <main style={{ flex: 1, overflowY: 'auto' }}>
           {currentTab === 'dashboard' && (
             <Dashboard customers={customers} contacts={contacts} employees={employees} />
           )}
           {currentTab === 'customers' && (
             <CustomersPage
-              customers={customers}
-              contacts={contacts}
-              onAdd={addCustomer}
-              onUpdate={updateCustomer}
-              onDelete={guard(deleteCustomer)}
-              onAddContact={addContact}
-              onUpdateContact={updateContact}
-              onDeleteContact={guard(deleteContact)}
+              customers={customers} contacts={contacts}
+              onAdd={addCustomer} onUpdate={updateCustomer} onDelete={guard(deleteCustomer)}
+              onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={guard(deleteContact)}
             />
           )}
           {currentTab === 'contacts' && (
             <ContactsPage
-              contacts={contacts}
-              customers={customers}
-              onAdd={addContact}
-              onUpdate={updateContact}
-              onDelete={guard(deleteContact)}
+              contacts={contacts} customers={customers}
+              onAdd={addContact} onUpdate={updateContact} onDelete={guard(deleteContact)}
             />
           )}
           {currentTab === 'employees' && (
             <EmployeesPage
               employees={employees}
-              onAdd={addEmployee}
-              onUpdate={updateEmployee}
-              onDelete={guard(deleteEmployee)}
+              onAdd={addEmployee} onUpdate={updateEmployee} onDelete={guard(deleteEmployee)}
             />
           )}
           {currentTab === 'tasks' && (
             <TasksPage
-              tasks={tasks}
-              customers={customers}
-              employees={employees}
-              onAdd={addTask}
-              onUpdate={updateTask}
-              onDelete={guard(deleteTask)}
+              tasks={tasks} customers={customers} employees={employees}
+              onAdd={addTask} onUpdate={updateTask} onDelete={guard(deleteTask)}
               myEmployeeId={role === 'employee' ? myEmployeeId : undefined}
             />
           )}
           {currentTab === 'quotes' && (
             <QuotesPage
-              quotes={quotes}
-              customers={customers}
-              employees={employees}
-              onAdd={addQuote}
-              onUpdate={updateQuote}
-              onDelete={guard(deleteQuote)}
+              quotes={quotes} customers={customers} employees={employees}
+              onAdd={addQuote} onUpdate={updateQuote} onDelete={guard(deleteQuote)}
               onAddCustomer={addCustomer}
             />
           )}
           {currentTab === 'debts' && (
             <DebtsPage
-              debts={debts}
-              customers={customers}
-              onAdd={addDebt}
-              onUpdate={updateDebt}
-              onDelete={guard(deleteDebt)}
+              debts={debts} customers={customers}
+              onAdd={addDebt} onUpdate={updateDebt} onDelete={guard(deleteDebt)}
             />
           )}
           {currentTab === 'reports' && (
             <ReportsPage
-              customers={customers}
-              contacts={contacts}
-              employees={employees}
-              tasks={tasks}
-              quotes={quotes}
-              debts={debts}
+              customers={customers} contacts={contacts} employees={employees}
+              tasks={tasks} quotes={quotes} debts={debts}
             />
           )}
         </main>

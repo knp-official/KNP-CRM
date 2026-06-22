@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useNotifications } from './hooks/useNotifications';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -55,6 +56,14 @@ function AppContent() {
   const myEmployee = employees.find(e => e.email === userDoc.email);
   const myEmployeeId = myEmployee?.id;
 
+  // Notifications
+  const { notifications, readIds, unreadCount, markAllRead, markRead } = useNotifications({
+    tasks, employees, customers,
+    myEmployeeId,
+    role,
+    userId: userDoc.uid || userDoc.id,
+  });
+
   // Wrap delete functions — pass undefined when not allowed (hides delete UI in pages)
   const guard = fn => (canDelete ? fn : undefined);
 
@@ -67,7 +76,15 @@ function AppContent() {
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar activeTab={currentTab} onTabChange={handleTabChange} role={role} />
       <div className="flex-1 flex flex-col overflow-hidden min-h-screen">
-        <Header userDoc={userDoc} />
+        <Header
+          userDoc={userDoc}
+          notifications={notifications}
+          readIds={readIds}
+          unreadCount={unreadCount}
+          onMarkAllRead={markAllRead}
+          onMarkRead={markRead}
+          onNavigate={handleTabChange}
+        />
         <main className="flex-1 overflow-auto">
           {currentTab === 'dashboard' && (
             <Dashboard customers={customers} contacts={contacts} employees={employees} />

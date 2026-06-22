@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
@@ -186,13 +186,33 @@ function PrimaryBtn({ loading, children, disabled }) {
 /* ── Brand logo ─────────────────────────────────────────────── */
 function Brand() {
   const [logoErr, setLogoErr] = useState(false);
+  const titleRef = useRef(null);
+  const [logoWidth, setLogoWidth] = useState(null);
+
+  useEffect(() => {
+    if (titleRef.current) {
+      setLogoWidth(titleRef.current.offsetWidth);
+    }
+  }, []);
+
   return (
     <div style={S.brand}>
-      {!logoErr
-        ? <img src="/logo.png" alt="Kim Ngân Phát" style={S.logo} onError={() => setLogoErr(true)} />
-        : <div style={S.logoFallback}><span style={S.logoText}>KNP</span></div>
-      }
-      <h1 style={S.title}>Kim Ngân Phát CRM</h1>
+      {!logoErr ? (
+        <img
+          src="/logo.png"
+          alt="Kim Ngân Phát"
+          style={{
+            display: 'block',
+            margin: '0 auto 14px',
+            width: logoWidth ? `${logoWidth}px` : '200px',
+            height: 'auto',
+          }}
+          onError={() => setLogoErr(true)}
+        />
+      ) : (
+        <div style={S.logoFallback}><span style={S.logoText}>KNP</span></div>
+      )}
+      <h1 ref={titleRef} style={S.title}>Kim Ngân Phát CRM</h1>
       <p style={S.subtitle}>Quản lý quan hệ khách hàng</p>
     </div>
   );

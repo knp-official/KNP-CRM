@@ -186,14 +186,6 @@ function PrimaryBtn({ loading, children, disabled }) {
 /* ── Brand logo ─────────────────────────────────────────────── */
 function Brand() {
   const [logoErr, setLogoErr] = useState(false);
-  const titleRef = useRef(null);
-  const [logoWidth, setLogoWidth] = useState(null);
-
-  useEffect(() => {
-    if (titleRef.current) {
-      setLogoWidth(titleRef.current.offsetWidth);
-    }
-  }, []);
 
   return (
     <div style={S.brand}>
@@ -201,19 +193,16 @@ function Brand() {
         <img
           src="/logo.png"
           alt="Kim Ngân Phát"
-          style={{
-            display: 'block',
-            margin: '0 auto 14px',
-            width: logoWidth ? `${logoWidth}px` : '200px',
-            height: 'auto',
-          }}
+          style={{ display: 'block', margin: '0 auto 10px', width: '200px', height: 'auto' }}
           onError={() => setLogoErr(true)}
         />
       ) : (
         <div style={S.logoFallback}><span style={S.logoText}>KNP</span></div>
       )}
-      <h1 ref={titleRef} style={S.title}>Kim Ngân Phát CRM</h1>
-      <p style={S.subtitle}>Quản lý quan hệ khách hàng</p>
+      <div style={{ width: '200px', margin: '0 auto', overflow: 'visible' }}>
+        <h1 style={{ ...S.title, textAlign: 'center', whiteSpace: 'nowrap' }}>Kim Ngân Phát CRM</h1>
+        <p style={{ ...S.subtitle, textAlign: 'center' }}>Quản lý quan hệ khách hàng</p>
+      </div>
     </div>
   );
 }

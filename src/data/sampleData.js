@@ -135,7 +135,7 @@ export const LOAI_KHACH_HANG = ['Nhà thầu M&E', 'Tư vấn thiết kế', 'Ch
 export const TRANG_THAI_KH = ['Tiềm năng', 'Đang hợp tác', 'Tạm dừng', 'Đã kết thúc'];
 export const NGUON_KH = ['Giới thiệu', 'Website', 'Hội chợ', 'Gọi điện', 'Mạng xã hội', 'Khác'];
 export const SAN_PHAM = ['Ống gió chống cháy', 'Phụ kiện HVAC', 'Thạch cao', 'Khác'];
-export const PHONG_BAN = ['Phòng Tài chính & Nhân sự', 'Phòng Kinh doanh', 'Phòng Sản xuất & Cung ứng'];
+export const PHONG_BAN = ['Ban Giám đốc', 'Phòng Tài chính & Nhân sự', 'Phòng Kinh doanh', 'Phòng Sản xuất & Cung ứng'];
 export const TRANG_THAI_NV = ['Đang làm việc', 'Nghỉ phép', 'Đã nghỉ việc'];
 export const VAI_TRO_NV = ['Admin', 'Quản lý', 'Nhân viên'];
 
@@ -143,7 +143,7 @@ export const BOOTSTRAP_CEO = {
   id: 'ceo_le_nhu_dung',
   ho_ten: 'Lê Như Dũng',
   chuc_vu: 'CEO / Founder',
-  phong_ban: 'Phòng Tài chính & Nhân sự',
+  phong_ban: 'Ban Giám đốc',
   vai_tro: 'Admin',
   quan_ly_id: '',
   dien_thoai: '',

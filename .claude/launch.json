@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "KNP CRM",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/tmp/knp-crm-dev.sh"],
+      "port": 5173,
+      "autoPort": false
+    }
+  ]
+}

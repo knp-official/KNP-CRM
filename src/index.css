@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+ * ── KNP Brand Design Tokens ──────────────────────────────────────────────────
+ * Override Tailwind palette để toàn bộ component tự áp dụng đúng màu
+ * mà không cần sửa từng file.
+ */
+@theme {
+  /* Orange = màu cam thương hiệu KNP #F15A22 */
+  --color-orange-50:  #FEF3EE;
+  --color-orange-100: #FDE3D5;
+  --color-orange-200: #FBC5AA;
+  --color-orange-300: #F8A07A;
+  --color-orange-400: #F47646;
+  --color-orange-500: #F15A22;   /* primary */
+  --color-orange-600: #D14E1D;   /* hover */
+  --color-orange-700: #A83C15;
+  --color-orange-800: #7D2D10;
+  --color-orange-900: #55200C;
+  --color-orange-950: #2E1107;
+
+  /* Slate = typography & border — chuẩn hóa theo KNP */
+  --color-slate-950: #1A1A1A;
+  --color-slate-900: #414042;   /* tiêu đề trang, heading */
+  --color-slate-800: #4A4A4A;
+  --color-slate-700: #555555;   /* text thường */
+  --color-slate-600: #666666;
+  --color-slate-500: #888888;   /* text phụ, placeholder */
+  --color-slate-400: #AAAAAA;
+  --color-slate-300: #CCCCCC;
+  --color-slate-200: #E8E8E8;   /* border card */
+  --color-slate-100: #F5F5F5;   /* nền nhẹ */
+  --color-slate-50:  #FAFAFA;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #F5F5F5;
+  color: #555555;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ── Print: ẩn sidebar khi in báo giá ─────────────────────────────────────── */
+@media print {
+  body > #root > div > div:first-child { display: none !important; }
+  body > #root > div > main { overflow: visible !important; }
+}

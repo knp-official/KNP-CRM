@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(find /opt /usr/local /Users/admin -name \"npm\" -type f 2>/dev/null | head -5; ls /Users/admin/.nvm/versions/node/ 2>/dev/null)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(kill 79461)",
+      "Bash(chmod +x \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM/start-dev.sh\")",
+      "Bash(cat)",
+      "Bash(chmod +x /tmp/knp-crm-dev.sh)",
+      "Bash(kill 86276)",
+      "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/npm run *)",
+      "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/node /Users/admin/.nvm/versions/node/v24.17.0/bin/npm run build)",
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm run build)"
+    ]
+  }
+}

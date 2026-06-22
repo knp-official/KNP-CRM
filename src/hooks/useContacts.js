@@ -1,38 +1,39 @@
-import { useState, useEffect } from 'react';
-import { getContacts, saveContacts, generateId } from '../data/storage';
+import { useState, useEffect, useRef } from 'react';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { SAMPLE_CONTACTS } from '../data/sampleData';
+import { generateId } from '../data/storage';
 
 export function useContacts() {
   const [contacts, setContacts] = useState([]);
+  const seeded = useRef(false);
 
   useEffect(() => {
-    const stored = getContacts();
-    if (stored.length === 0) {
-      saveContacts(SAMPLE_CONTACTS);
-      setContacts(SAMPLE_CONTACTS);
-    } else {
-      setContacts(stored);
-    }
+    const unsub = onSnapshot(collection(db, 'contacts'), snapshot => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (data.length === 0 && !seeded.current) {
+        seeded.current = true;
+        SAMPLE_CONTACTS.forEach(c => setDoc(doc(db, 'contacts', c.id), c));
+      } else {
+        setContacts(data);
+      }
+    });
+    return unsub;
   }, []);
 
   function addContact(data) {
-    const newContact = { ...data, id: generateId(), ngay_tao: new Date().toISOString().split('T')[0] };
-    const updated = [newContact, ...contacts];
-    setContacts(updated);
-    saveContacts(updated);
-    return newContact;
+    const id = generateId();
+    const rec = { ...data, id, ngay_tao: new Date().toISOString().split('T')[0] };
+    setDoc(doc(db, 'contacts', id), rec);
+    return rec;
   }
 
   function updateContact(id, data) {
-    const updated = contacts.map(c => c.id === id ? { ...c, ...data } : c);
-    setContacts(updated);
-    saveContacts(updated);
+    updateDoc(doc(db, 'contacts', id), data);
   }
 
   function deleteContact(id) {
-    const updated = contacts.filter(c => c.id !== id);
-    setContacts(updated);
-    saveContacts(updated);
+    deleteDoc(doc(db, 'contacts', id));
   }
 
   function getContactsByCustomer(customerId) {

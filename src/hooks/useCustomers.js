@@ -1,38 +1,39 @@
-import { useState, useEffect } from 'react';
-import { getCustomers, saveCustomers, generateId } from '../data/storage';
+import { useState, useEffect, useRef } from 'react';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { SAMPLE_CUSTOMERS } from '../data/sampleData';
+import { generateId } from '../data/storage';
 
 export function useCustomers() {
   const [customers, setCustomers] = useState([]);
+  const seeded = useRef(false);
 
   useEffect(() => {
-    const stored = getCustomers();
-    if (stored.length === 0) {
-      saveCustomers(SAMPLE_CUSTOMERS);
-      setCustomers(SAMPLE_CUSTOMERS);
-    } else {
-      setCustomers(stored);
-    }
+    const unsub = onSnapshot(collection(db, 'customers'), snapshot => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (data.length === 0 && !seeded.current) {
+        seeded.current = true;
+        SAMPLE_CUSTOMERS.forEach(c => setDoc(doc(db, 'customers', c.id), c));
+      } else {
+        setCustomers(data);
+      }
+    });
+    return unsub;
   }, []);
 
   function addCustomer(data) {
-    const newCustomer = { ...data, id: generateId(), ngay_tao: new Date().toISOString().split('T')[0] };
-    const updated = [newCustomer, ...customers];
-    setCustomers(updated);
-    saveCustomers(updated);
-    return newCustomer;
+    const id = generateId();
+    const rec = { ...data, id, ngay_tao: new Date().toISOString().split('T')[0] };
+    setDoc(doc(db, 'customers', id), rec);
+    return rec;
   }
 
   function updateCustomer(id, data) {
-    const updated = customers.map(c => c.id === id ? { ...c, ...data } : c);
-    setCustomers(updated);
-    saveCustomers(updated);
+    updateDoc(doc(db, 'customers', id), data);
   }
 
   function deleteCustomer(id) {
-    const updated = customers.filter(c => c.id !== id);
-    setCustomers(updated);
-    saveCustomers(updated);
+    deleteDoc(doc(db, 'customers', id));
   }
 
   return { customers, addCustomer, updateCustomer, deleteCustomer };

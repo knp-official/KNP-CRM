@@ -13,7 +13,8 @@
       "Bash(kill 86276)",
       "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/npm run *)",
       "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/node /Users/admin/.nvm/versions/node/v24.17.0/bin/npm run build)",
-      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm run build)"
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm run build)",
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm install firebase)"
     ]
   }
 }

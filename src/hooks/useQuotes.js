@@ -1,39 +1,46 @@
-import { useState, useEffect } from 'react';
-import { getQuotes, saveQuotes, generateId } from '../data/storage';
+import { useState, useEffect, useRef } from 'react';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { SAMPLE_QUOTES } from '../data/sampleData';
+import { generateId } from '../data/storage';
 
 export function useQuotes() {
   const [quotes, setQuotes] = useState([]);
+  const seeded = useRef(false);
 
   useEffect(() => {
-    const stored = getQuotes();
-    if (stored.length === 0) { saveQuotes(SAMPLE_QUOTES); setQuotes(SAMPLE_QUOTES); }
-    else setQuotes(stored);
+    const unsub = onSnapshot(collection(db, 'quotes'), snapshot => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (data.length === 0 && !seeded.current) {
+        seeded.current = true;
+        SAMPLE_QUOTES.forEach(q => setDoc(doc(db, 'quotes', q.id), q));
+      } else {
+        setQuotes(data);
+      }
+    });
+    return unsub;
   }, []);
 
   function addQuote(data) {
-    const stored = getQuotes();
-    const nextNum = (stored.length + 1).toString().padStart(3, '0');
+    const id = generateId();
+    const nextNum = (quotes.length + 1).toString().padStart(3, '0');
     const year = new Date().getFullYear();
     const rec = {
       ...data,
-      id: generateId(),
+      id,
       so_bao_gia: `BG-${year}-${nextNum}`,
       ngay_tao: new Date().toISOString().split('T')[0],
     };
-    const updated = [rec, ...quotes];
-    setQuotes(updated); saveQuotes(updated);
+    setDoc(doc(db, 'quotes', id), rec);
     return rec;
   }
 
   function updateQuote(id, data) {
-    const updated = quotes.map(q => q.id === id ? { ...q, ...data } : q);
-    setQuotes(updated); saveQuotes(updated);
+    updateDoc(doc(db, 'quotes', id), data);
   }
 
   function deleteQuote(id) {
-    const updated = quotes.filter(q => q.id !== id);
-    setQuotes(updated); saveQuotes(updated);
+    deleteDoc(doc(db, 'quotes', id));
   }
 
   return { quotes, addQuote, updateQuote, deleteQuote };

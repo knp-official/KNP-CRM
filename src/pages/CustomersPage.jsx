@@ -156,9 +156,11 @@ export default function CustomersPage({ customers, contacts, onAdd, onUpdate, on
                         <button onClick={() => setEditing(c)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded">
                           <Edit2 size={15} />
                         </button>
-                        <button onClick={() => setConfirmDelete(c.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded">
-                          <Trash2 size={15} />
-                        </button>
+                        {onDelete && (
+                          <button onClick={() => setConfirmDelete(c.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -181,7 +183,7 @@ export default function CustomersPage({ customers, contacts, onAdd, onUpdate, on
         </Modal>
       )}
 
-      {confirmDelete && (
+      {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
           <p className="text-slate-600 mb-6">Bạn có chắc chắn muốn xóa khách hàng này? Hành động này không thể hoàn tác.</p>
           <div className="flex justify-end gap-3">

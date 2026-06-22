@@ -214,7 +214,7 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
   );
 }
 
-export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete }) {
+export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmp, setFilterEmp] = useState('');
@@ -223,7 +223,10 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const filtered = tasks.filter(t => {
+  // Employee role: only see their own tasks
+  const visibleTasks = myEmployeeId ? tasks.filter(t => t.nhan_vien_id === myEmployeeId) : tasks;
+
+  const filtered = visibleTasks.filter(t => {
     const q = search.toLowerCase();
     const emp = employees.find(e => e.id === t.nhan_vien_id);
     return (!q || t.tieu_de.toLowerCase().includes(q))
@@ -322,7 +325,7 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
                       <p className={`font-medium text-sm ${task.trang_thai === 'Hoàn thành' ? 'line-through text-slate-400' : 'text-slate-900'}`}>{task.tieu_de}</p>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 flex-shrink-0">
                         <button onClick={() => setEditing(task)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
-                        <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
+                        {onDelete && <button onClick={() => setConfirmDelete(task.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>}
                       </div>
                     </div>
                     {task.mo_ta && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.mo_ta}</p>}
@@ -371,7 +374,7 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
             onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}
-      {confirmDelete && (
+      {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
           <p className="text-slate-600 mb-6">Bạn có chắc muốn xóa công việc này?</p>
           <div className="flex justify-end gap-3">

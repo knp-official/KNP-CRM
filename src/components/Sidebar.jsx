@@ -32,7 +32,16 @@ const navGroups = [
   },
 ];
 
-export default function Sidebar({ activeTab, onTabChange }) {
+// Items visible to 'employee' role
+const EMPLOYEE_ITEM_IDS = new Set(['dashboard', 'customers', 'tasks']);
+
+export default function Sidebar({ activeTab, onTabChange, role = 'admin' }) {
+  const visibleGroups = navGroups
+    .map(g => ({
+      ...g,
+      items: role === 'employee' ? g.items.filter(i => EMPLOYEE_ITEM_IDS.has(i.id)) : g.items,
+    }))
+    .filter(g => g.items.length > 0);
   return (
     <div
       className="w-56 min-h-screen flex flex-col flex-shrink-0 border-r"
@@ -51,7 +60,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 space-y-4 overflow-y-auto">
-        {navGroups.map(group => (
+        {visibleGroups.map(group => (
           <div key={group.label}>
             <p
               className="text-xs font-semibold tracking-wider px-2 mb-1"

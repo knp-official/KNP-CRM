@@ -192,7 +192,7 @@ export default function DebtsPage({ debts, customers, onAdd, onUpdate, onDelete 
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                         <button onClick={() => setEditing(d)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={14} /></button>
-                        <button onClick={() => setConfirmDelete(d.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
+                        {onDelete && <button onClick={() => setConfirmDelete(d.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>}
                       </div>
                     </td>
                   </tr>
@@ -209,7 +209,7 @@ export default function DebtsPage({ debts, customers, onAdd, onUpdate, onDelete 
       {editing && <Modal title="Chỉnh sửa công nợ" onClose={() => setEditing(null)} size="md">
         <DebtForm initial={editing} customers={customers} onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
       </Modal>}
-      {confirmDelete && (
+      {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
           <p className="text-slate-600 mb-6">Xóa bản ghi công nợ này?</p>
           <div className="flex justify-end gap-3">

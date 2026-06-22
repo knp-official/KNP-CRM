@@ -42,9 +42,11 @@ export default function CustomerDetail({ customer, contacts, allCustomers, onBac
         <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">
           <Edit2 size={14} /> Chỉnh sửa
         </button>
-        <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
-          <Trash2 size={14} /> Xóa
-        </button>
+        {onDelete && (
+          <button onClick={onDelete} className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+            <Trash2 size={14} /> Xóa
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -123,9 +125,11 @@ export default function CustomerDetail({ customer, contacts, allCustomers, onBac
                         <button onClick={() => setEditingContact(ct)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded">
                           <Edit3 size={13} />
                         </button>
-                        <button onClick={() => setConfirmDeleteContact(ct.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded">
-                          <Trash2 size={13} />
-                        </button>
+                        {onDeleteContact && (
+                          <button onClick={() => setConfirmDeleteContact(ct.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-3">
@@ -186,7 +190,7 @@ export default function CustomerDetail({ customer, contacts, allCustomers, onBac
         </Modal>
       )}
 
-      {confirmDeleteContact && (
+      {onDeleteContact && confirmDeleteContact && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDeleteContact(null)} size="sm">
           <p className="text-slate-600 mb-6">Bạn có chắc muốn xóa liên hệ này?</p>
           <div className="flex justify-end gap-3">

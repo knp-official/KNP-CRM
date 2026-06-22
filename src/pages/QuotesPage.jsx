@@ -443,10 +443,12 @@ export default function QuotesPage({ quotes, customers, employees, onAdd, onUpda
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                           <Edit2 size={12} /> Chỉnh sửa
                         </button>
-                        <button onClick={() => setConfirmDelete(q.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded" title="Xóa">
-                          <Trash2 size={14} />
-                        </button>
+                        {onDelete && (
+                          <button onClick={() => setConfirmDelete(q.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded" title="Xóa">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -496,7 +498,7 @@ export default function QuotesPage({ quotes, customers, employees, onAdd, onUpda
       )}
 
       {/* Confirm xóa */}
-      {confirmDelete && (
+      {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
           <p className="text-slate-600 mb-6">Xóa báo giá này khỏi hệ thống?</p>
           <div className="flex justify-end gap-3">

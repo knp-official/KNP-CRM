@@ -253,7 +253,7 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
                 </div>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
                   <button onClick={() => setEditing(emp)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
-                  <button onClick={() => setConfirmDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
+                  {onDelete && <button onClick={() => setConfirmDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>}
                 </div>
               </div>
 
@@ -322,7 +322,7 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
           <EmployeeForm initial={editing} employees={employees} onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}
-      {confirmDelete && (
+      {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
           <p className="text-slate-600 mb-6">Bạn có chắc muốn xóa nhân viên này?</p>
           <div className="flex justify-end gap-3">

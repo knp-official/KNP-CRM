@@ -1,22 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { SAMPLE_QUOTES } from '../data/sampleData';
 import { generateId } from '../data/storage';
 
 export function useQuotes() {
   const [quotes, setQuotes] = useState([]);
-  const seeded = useRef(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'quotes'), snapshot => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (data.length === 0 && !seeded.current) {
-        seeded.current = true;
-        SAMPLE_QUOTES.forEach(q => setDoc(doc(db, 'quotes', q.id), q));
-      } else {
-        setQuotes(data);
-      }
+      setQuotes(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsub;
   }, []);

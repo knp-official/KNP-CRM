@@ -1,22 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { SAMPLE_CUSTOMERS } from '../data/sampleData';
 import { generateId } from '../data/storage';
 
 export function useCustomers() {
   const [customers, setCustomers] = useState([]);
-  const seeded = useRef(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'customers'), snapshot => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (data.length === 0 && !seeded.current) {
-        seeded.current = true;
-        SAMPLE_CUSTOMERS.forEach(c => setDoc(doc(db, 'customers', c.id), c));
-      } else {
-        setCustomers(data);
-      }
+      setCustomers(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsub;
   }, []);

@@ -1,22 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { SAMPLE_DEBTS } from '../data/sampleData';
 import { generateId } from '../data/storage';
 
 export function useDebts() {
   const [debts, setDebts] = useState([]);
-  const seeded = useRef(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'debts'), snapshot => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (data.length === 0 && !seeded.current) {
-        seeded.current = true;
-        SAMPLE_DEBTS.forEach(d => setDoc(doc(db, 'debts', d.id), d));
-      } else {
-        setDebts(data);
-      }
+      setDebts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsub;
   }, []);

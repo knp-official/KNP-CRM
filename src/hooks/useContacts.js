@@ -1,22 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { SAMPLE_CONTACTS } from '../data/sampleData';
 import { generateId } from '../data/storage';
 
 export function useContacts() {
   const [contacts, setContacts] = useState([]);
-  const seeded = useRef(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'contacts'), snapshot => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (data.length === 0 && !seeded.current) {
-        seeded.current = true;
-        SAMPLE_CONTACTS.forEach(c => setDoc(doc(db, 'contacts', c.id), c));
-      } else {
-        setContacts(data);
-      }
+      setContacts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return unsub;
   }, []);

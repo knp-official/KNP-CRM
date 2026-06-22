@@ -1,14 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { BOOTSTRAP_CEO } from '../data/sampleData';
 import { generateId } from '../data/storage';
 
 export function useEmployees() {
   const [employees, setEmployees] = useState([]);
+  const seeded = useRef(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'employees'), snapshot => {
-      setEmployees(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (data.length === 0 && !seeded.current) {
+        seeded.current = true;
+        setDoc(doc(db, 'employees', BOOTSTRAP_CEO.id), BOOTSTRAP_CEO);
+      } else {
+        setEmployees(data);
+      }
     });
     return unsub;
   }, []);

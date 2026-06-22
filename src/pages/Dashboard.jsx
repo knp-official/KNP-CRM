@@ -1,6 +1,12 @@
-import { Building2, Users, TrendingUp, MapPin, Cake, UserCheck } from 'lucide-react';
+import { Building2, Users, TrendingUp, MapPin, Cake, UserCheck, Shield } from 'lucide-react';
 import Badge from '../components/Badge';
 import { TRANG_THAI_KH, LOAI_KHACH_HANG, PHONG_BAN } from '../data/sampleData';
+
+const roleStyle = {
+  'Admin':    { cls: 'bg-red-100 text-red-700' },
+  'Quản lý':  { cls: 'bg-orange-100 text-orange-700' },
+  'Nhân viên':{ cls: 'bg-slate-100 text-slate-500' },
+};
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -159,6 +165,38 @@ export default function Dashboard({ customers, contacts, employees }) {
         {/* Widget sinh nhật */}
         <BirthdayWidget employees={employees || []} customers={customers} />
       </div>
+
+      {/* Ban lãnh đạo */}
+      {employees.filter(e => e.vai_tro === 'Admin' || e.vai_tro === 'Quản lý').length > 0 && (
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield size={17} className="text-red-500" />
+            <h3 className="font-semibold text-slate-900">Ban lãnh đạo</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {employees
+              .filter(e => (e.vai_tro === 'Admin' || e.vai_tro === 'Quản lý') && e.trang_thai === 'Đang làm việc')
+              .sort((a, b) => (a.vai_tro === 'Admin' ? -1 : 1))
+              .map(e => {
+                const role = roleStyle[e.vai_tro] || roleStyle['Nhân viên'];
+                return (
+                  <div key={e.id} className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 min-w-48">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold">{e.ho_ten.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{e.ho_ten}</p>
+                      <p className="text-xs text-slate-500 mb-1">{e.chuc_vu}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${role.cls}`}>
+                        <Shield size={9} className="inline mr-0.5 -mt-0.5" />{e.vai_tro}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Nhân viên theo phòng ban */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">

@@ -220,11 +220,8 @@ function AppContent() {
   const currentUserUid = userDoc?.uid;
   const isEmployee     = role === 'employee';
 
-  // Employee: thấy đồng nghiệp cùng phòng ban
-  const myDept = myEmployee?.phong_ban;
-  const visibleEmployees = isEmployee && myDept
-    ? employees.filter(e => e.phong_ban === myDept)
-    : employees;
+  // Employee: thấy tất cả nhân viên, nhưng không có quyền Thêm/Sửa/Xóa
+  const visibleEmployees = employees;
 
   // Employee add customer → tự động gán managedBy
   function handleAddCustomer(data) {

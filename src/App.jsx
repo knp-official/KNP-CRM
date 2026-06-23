@@ -42,13 +42,13 @@ const PERMS = {
     reports:   { view: true },
   },
   employee: {
-    customers: { add: false, edit: false, del: false },
+    customers: { add: true,  edit: true,  del: false }, // edit per-row via canEditCustomer()
     contacts:  { add: false, edit: false, del: false },
     employees: { add: false, edit: false, del: false },
-    tasks:     { add: false, edit: false, del: false },
+    tasks:     { add: true,  edit: true,  del: false },
     quotes:    { add: false, edit: false, del: false },
     debts:     { view: false },
-    reports:   { view: false },
+    reports:   { view: true },  // hiển thị PersonalReportView
   },
 };
 
@@ -214,9 +214,22 @@ function AppContent() {
 
   if (!user || !userDoc) return <LoginPage />;
 
-  const p   = PERMS[role] || PERMS.employee;
-  const g   = (fn, allowed) => (allowed ? fn : undefined); // guard: trả undefined nếu không có quyền
-  const tab = activeTab;
+  const p              = PERMS[role] || PERMS.employee;
+  const g              = (fn, allowed) => (allowed ? fn : undefined);
+  const tab            = activeTab;
+  const currentUserUid = userDoc?.uid;
+  const isEmployee     = role === 'employee';
+
+  // Employee: thấy đồng nghiệp cùng phòng ban
+  const myDept = myEmployee?.phong_ban;
+  const visibleEmployees = isEmployee && myDept
+    ? employees.filter(e => e.phong_ban === myDept)
+    : employees;
+
+  // Employee add customer → tự động gán managedBy
+  function handleAddCustomer(data) {
+    return addCustomer(isEmployee ? { ...data, managedBy: currentUserUid } : data);
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
@@ -238,12 +251,14 @@ function AppContent() {
           {tab === 'customers' && (
             <CustomersPage
               customers={customers} contacts={contacts}
-              onAdd={g(addCustomer, p.customers.add)}
+              onAdd={g(handleAddCustomer, p.customers.add)}
               onUpdate={g(updateCustomer, p.customers.edit)}
               onDelete={g(deleteCustomer, p.customers.del)}
               onAddContact={g(addContact, p.contacts.add)}
               onUpdateContact={g(updateContact, p.contacts.edit)}
               onDeleteContact={g(deleteContact, p.contacts.del)}
+              currentUserUid={currentUserUid}
+              isEmployee={isEmployee}
             />
           )}
           {tab === 'contacts' && (
@@ -256,7 +271,7 @@ function AppContent() {
           )}
           {tab === 'employees' && (
             <EmployeesPage
-              employees={role === 'employee' ? employees.filter(e => e.id === myEmployeeId) : employees}
+              employees={visibleEmployees}
               onAdd={g(addEmployee, p.employees.add)}
               onUpdate={g(updateEmployee, p.employees.edit)}
               onDelete={g(deleteEmployee, p.employees.del)}
@@ -268,7 +283,8 @@ function AppContent() {
               onAdd={g(handleAddTask, p.tasks.add)}
               onUpdate={handleUpdateTask}
               onDelete={g(deleteTask, p.tasks.del)}
-              myEmployeeId={role === 'employee' ? myEmployeeId : undefined}
+              myEmployeeId={isEmployee ? myEmployeeId : undefined}
+              myUid={isEmployee ? currentUserUid : undefined}
             />
           )}
           {tab === 'quotes' && (
@@ -291,12 +307,13 @@ function AppContent() {
               : <AccessDenied module="Công nợ" />
           )}
           {tab === 'reports' && (
-            p.reports.view
-              ? <ReportsPage
-                  customers={customers} contacts={contacts} employees={employees}
-                  tasks={tasks} quotes={quotes} debts={debts}
-                />
-              : <AccessDenied module="Báo cáo" />
+            <ReportsPage
+              customers={customers} contacts={contacts} employees={employees}
+              tasks={tasks} quotes={quotes} debts={debts}
+              isEmployeeView={isEmployee}
+              myEmployeeId={myEmployeeId}
+              myUid={currentUserUid}
+            />
           )}
         </main>
       </div>

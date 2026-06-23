@@ -6,7 +6,7 @@ import CustomerForm from '../components/CustomerForm';
 import CustomerDetail from './CustomerDetail';
 import { LOAI_KHACH_HANG, TRANG_THAI_KH } from '../data/sampleData';
 
-export default function CustomersPage({ customers, contacts, onAdd, onUpdate, onDelete, onAddContact, onUpdateContact, onDeleteContact }) {
+export default function CustomersPage({ customers, contacts, onAdd, onUpdate, onDelete, onAddContact, onUpdateContact, onDeleteContact, currentUserUid, isEmployee }) {
   const [search, setSearch] = useState('');
   const [filterLoai, setFilterLoai] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -40,6 +40,9 @@ export default function CustomersPage({ customers, contacts, onAdd, onUpdate, on
 
   const selectCls = 'border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white';
 
+  // Per-row permission: employee chỉ sửa được KH do mình quản lý
+  const canEditCustomer = (c) => !!onUpdate && (!isEmployee || c.managedBy === currentUserUid);
+
   if (viewing) {
     const customer = customers.find(c => c.id === viewing);
     const customerContacts = contacts.filter(ct => ct.khach_hang_id === viewing);
@@ -49,8 +52,8 @@ export default function CustomersPage({ customers, contacts, onAdd, onUpdate, on
         contacts={customerContacts}
         allCustomers={customers}
         onBack={() => setViewing(null)}
-        onEdit={() => { setEditing(customer); setViewing(null); }}
-        onDelete={() => { setConfirmDelete(customer.id); setViewing(null); }}
+        onEdit={canEditCustomer(customer) ? () => { setEditing(customer); setViewing(null); } : null}
+        onDelete={onDelete ? () => { setConfirmDelete(customer.id); setViewing(null); } : null}
         onAddContact={onAddContact}
         onUpdateContact={onUpdateContact}
         onDeleteContact={onDeleteContact}
@@ -153,9 +156,11 @@ export default function CustomersPage({ customers, contacts, onAdd, onUpdate, on
                         <button onClick={() => setViewing(c.id)} className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded">
                           <ChevronRight size={15} />
                         </button>
-                        <button onClick={() => setEditing(c)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded">
-                          <Edit2 size={15} />
-                        </button>
+                        {canEditCustomer(c) && (
+                          <button onClick={() => setEditing(c)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded">
+                            <Edit2 size={15} />
+                          </button>
+                        )}
                         {onDelete && (
                           <button onClick={() => setConfirmDelete(c.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded">
                             <Trash2 size={15} />

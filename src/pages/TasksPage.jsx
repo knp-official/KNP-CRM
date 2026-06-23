@@ -214,7 +214,7 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
   );
 }
 
-export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId }) {
+export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId, myUid }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmp, setFilterEmp] = useState('');
@@ -223,8 +223,10 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // Employee role: only see their own tasks
-  const visibleTasks = myEmployeeId ? tasks.filter(t => t.nhan_vien_id === myEmployeeId) : tasks;
+  // Employee: thấy task được giao cho mình HOẶC do mình tạo
+  const visibleTasks = myEmployeeId
+    ? tasks.filter(t => t.nhan_vien_id === myEmployeeId || (myUid && t.created_by_uid === myUid))
+    : tasks;
 
   const filtered = visibleTasks.filter(t => {
     const q = search.toLowerCase();

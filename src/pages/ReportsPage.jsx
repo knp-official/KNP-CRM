@@ -33,7 +33,104 @@ function BarRow({ label, value, max, color, formatted }) {
   );
 }
 
-export default function ReportsPage({ customers, contacts, employees, tasks, quotes, debts }) {
+function PersonalReportView({ customers, tasks, myEmployeeId, myUid }) {
+  const myTasks = tasks.filter(t =>
+    t.nhan_vien_id === myEmployeeId || (myUid && t.created_by_uid === myUid)
+  );
+  const total    = myTasks.length;
+  const done     = myTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
+  const inProg   = myTasks.filter(t => t.trang_thai === 'Đang làm').length;
+  const overdue  = myTasks.filter(t => t.trang_thai === 'Quá hạn' || (t.deadline && new Date(t.deadline) < new Date() && t.trang_thai !== 'Hoàn thành')).length;
+  const onTime   = myTasks.filter(t => t.trang_thai === 'Hoàn thành' && (!t.deadline || new Date(t.deadline) >= new Date())).length;
+  const onTimeRate = done > 0 ? Math.round((onTime / done) * 100) : 0;
+  const myCustomers = customers.filter(c => c.managedBy === myUid);
+
+  const S = { fontFamily: "'Inter', system-ui, sans-serif", padding: '24px' };
+  const card = { background: '#fff', borderRadius: '12px', border: '1px solid #E8E8E8', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' };
+  const statNum = { fontSize: '28px', fontWeight: '800', color: '#414042', margin: '6px 0 2px' };
+  const statLabel = { fontSize: '12px', color: '#999', margin: 0 };
+  const statSub = { fontSize: '11px', color: '#BBBBBB', margin: 0 };
+
+  return (
+    <div style={S}>
+      <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#414042', margin: '0 0 4px' }}>Hiệu suất cá nhân</h1>
+      <p style={{ fontSize: '13px', color: '#AAAAAA', margin: '0 0 24px' }}>Chỉ thống kê công việc và khách hàng của bạn</p>
+
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        {[
+          { icon: '📋', label: 'Tổng công việc', value: total, sub: `${done} hoàn thành`, accent: '#F15A22' },
+          { icon: '✅', label: 'Đúng hạn', value: `${onTimeRate}%`, sub: `${onTime}/${done} task`, accent: '#059669' },
+          { icon: '⏳', label: 'Đang xử lý', value: inProg, sub: `${overdue} quá hạn`, accent: '#2563EB' },
+          { icon: '🏢', label: 'KH quản lý', value: myCustomers.length, sub: 'khách hàng của bạn', accent: '#7C3AED' },
+        ].map(({ icon, label, value, sub, accent }) => (
+          <div key={label} style={{ ...card, borderTop: `3px solid ${accent}` }}>
+            <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+            <p style={statNum}>{value}</p>
+            <p style={{ ...statLabel, color: accent, fontWeight: '600' }}>{label}</p>
+            <p style={statSub}>{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Task breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={card}>
+          <p style={{ fontSize: '14px', fontWeight: '700', color: '#414042', margin: '0 0 16px' }}>📊 Tình trạng công việc</p>
+          {total === 0 ? (
+            <p style={{ fontSize: '13px', color: '#AAAAAA', textAlign: 'center', padding: '16px 0' }}>Chưa có công việc nào</p>
+          ) : (
+            [
+              { label: 'Hoàn thành', value: done, color: '#059669', bg: '#ECFDF5' },
+              { label: 'Đang làm', value: inProg, color: '#2563EB', bg: '#EFF6FF' },
+              { label: 'Quá hạn', value: overdue, color: '#DC2626', bg: '#FEF2F2' },
+              { label: 'Chưa làm', value: total - done - inProg - overdue, color: '#64748B', bg: '#F8FAFC' },
+            ].map(({ label, value, color, bg }) => (
+              <div key={label} style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '13px', color: '#555' }}>{label}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color }}>{value}</span>
+                </div>
+                <div style={{ height: '6px', background: '#F0F0F0', borderRadius: '99px' }}>
+                  <div style={{ height: '6px', background: color, borderRadius: '99px', width: total > 0 ? `${(value / total) * 100}%` : '0%', transition: 'width 0.4s' }} />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={card}>
+          <p style={{ fontSize: '14px', fontWeight: '700', color: '#414042', margin: '0 0 16px' }}>🏢 Khách hàng đang quản lý</p>
+          {myCustomers.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#AAAAAA', textAlign: 'center', padding: '16px 0' }}>Chưa có khách hàng nào được giao</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {myCustomers.slice(0, 6).map(c => (
+                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', background: '#FFF3EE', border: '1px solid #FED7C3', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '14px' }}>🏢</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '13px', fontWeight: '600', color: '#414042', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.ten}</p>
+                    <p style={{ fontSize: '11px', color: '#AAAAAA', margin: 0 }}>{c.trang_thai || ''}</p>
+                  </div>
+                </div>
+              ))}
+              {myCustomers.length > 6 && (
+                <p style={{ fontSize: '11px', color: '#AAAAAA', textAlign: 'center', margin: '4px 0 0' }}>+{myCustomers.length - 6} khách hàng khác</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ReportsPage({ customers, contacts, employees, tasks, quotes, debts, isEmployeeView, myEmployeeId, myUid }) {
+  if (isEmployeeView) {
+    return <PersonalReportView customers={customers} tasks={tasks} myEmployeeId={myEmployeeId} myUid={myUid} />;
+  }
   const today = new Date().toISOString().split('T')[0];
   const currentMonth = today.slice(0, 7);
 

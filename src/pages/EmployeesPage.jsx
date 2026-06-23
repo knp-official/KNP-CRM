@@ -76,78 +76,103 @@ function applySort(list, sort) {
   }
 }
 
-function EmployeeForm({ initial, employees, onSubmit, onCancel }) {
+function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false }) {
   const empty = {
     ho_ten: '', chuc_vu: '', phong_ban: 'Phòng Kinh doanh', vai_tro: 'Nhân viên',
     quan_ly_id: '', dien_thoai: '', email: '', ngay_vao_lam: '', ngay_sinh: '',
     trang_thai: 'Đang làm việc', ghi_chu: '',
   };
   const [form, setForm] = useState(initial || empty);
-  const set = (f, v) => setForm(p => ({ ...p, [f]: v }));
+  const set = (f, v) => { if (!readOnly) setForm(p => ({ ...p, [f]: v })); };
 
-  // Exclude self from manager list
   const managerOptions = employees.filter(e => e.id !== initial?.id);
 
+  // Inline style cho input bị disabled
+  const disabledStyle = readOnly
+    ? { backgroundColor: '#F8F8F8', color: '#666', cursor: 'not-allowed', opacity: 0.85 }
+    : {};
+
   return (
-    <form onSubmit={e => { e.preventDefault(); if (!form.ho_ten.trim()) return; onSubmit(form); }} className="space-y-4">
+    <form onSubmit={e => { e.preventDefault(); if (readOnly || !form.ho_ten.trim()) return; onSubmit(form); }} className="space-y-4">
+      {/* Banner read-only */}
+      {readOnly && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '10px 14px', borderRadius: '8px',
+          backgroundColor: '#FFFBEB', border: '1px solid #FDE68A',
+          fontSize: '13px', color: '#92400E', fontFamily: "'Inter', system-ui, sans-serif",
+          marginBottom: '4px',
+        }}>
+          <span style={{ fontSize: '15px' }}>🔒</span>
+          <span>Bạn không có quyền chỉnh sửa thông tin này.</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className={labelCls}>Họ và tên <span className="text-red-500">*</span></label>
-          <input className={inputCls} value={form.ho_ten} onChange={e => set('ho_ten', e.target.value)} placeholder="Nguyễn Văn A" required />
+          <label className={labelCls}>Họ và tên</label>
+          <input className={inputCls} style={disabledStyle} value={form.ho_ten} onChange={e => set('ho_ten', e.target.value)} placeholder="Nguyễn Văn A" disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Chức vụ</label>
-          <input className={inputCls} value={form.chuc_vu} onChange={e => set('chuc_vu', e.target.value)} placeholder="Nhân viên kinh doanh..." />
+          <input className={inputCls} style={disabledStyle} value={form.chuc_vu} onChange={e => set('chuc_vu', e.target.value)} placeholder="Nhân viên kinh doanh..." disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Phòng ban</label>
-          <select className={inputCls} value={form.phong_ban} onChange={e => set('phong_ban', e.target.value)}>
+          <select className={inputCls} style={disabledStyle} value={form.phong_ban} onChange={e => set('phong_ban', e.target.value)} disabled={readOnly}>
             {PHONG_BAN.map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
         <div>
           <label className={labelCls}>Vai trò hệ thống</label>
-          <select className={inputCls} value={form.vai_tro || 'Nhân viên'} onChange={e => set('vai_tro', e.target.value)}>
+          <select className={inputCls} style={disabledStyle} value={form.vai_tro || 'Nhân viên'} onChange={e => set('vai_tro', e.target.value)} disabled={readOnly}>
             {VAI_TRO_NV.map(v => <option key={v}>{v}</option>)}
           </select>
         </div>
         <div>
           <label className={labelCls}>Người quản lý trực tiếp</label>
-          <select className={inputCls} value={form.quan_ly_id || ''} onChange={e => set('quan_ly_id', e.target.value)}>
+          <select className={inputCls} style={disabledStyle} value={form.quan_ly_id || ''} onChange={e => set('quan_ly_id', e.target.value)} disabled={readOnly}>
             <option value="">— Không có —</option>
             {managerOptions.map(e => <option key={e.id} value={e.id}>{e.ho_ten} ({e.chuc_vu || e.phong_ban})</option>)}
           </select>
         </div>
         <div>
           <label className={labelCls}>Điện thoại</label>
-          <input className={inputCls} value={form.dien_thoai} onChange={e => set('dien_thoai', e.target.value)} placeholder="09xxxxxxxx" />
+          <input className={inputCls} style={disabledStyle} value={form.dien_thoai} onChange={e => set('dien_thoai', e.target.value)} placeholder="09xxxxxxxx" disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Email</label>
-          <input type="email" className={inputCls} value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@knp.vn" />
+          <input type="email" className={inputCls} style={disabledStyle} value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@knp.vn" disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Ngày sinh</label>
-          <input type="date" className={inputCls} value={form.ngay_sinh} onChange={e => set('ngay_sinh', e.target.value)} />
+          <input type="date" className={inputCls} style={disabledStyle} value={form.ngay_sinh} onChange={e => set('ngay_sinh', e.target.value)} disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Ngày vào làm</label>
-          <input type="date" className={inputCls} value={form.ngay_vao_lam} onChange={e => set('ngay_vao_lam', e.target.value)} />
+          <input type="date" className={inputCls} style={disabledStyle} value={form.ngay_vao_lam} onChange={e => set('ngay_vao_lam', e.target.value)} disabled={readOnly} />
         </div>
         <div>
           <label className={labelCls}>Trạng thái</label>
-          <select className={inputCls} value={form.trang_thai} onChange={e => set('trang_thai', e.target.value)}>
+          <select className={inputCls} style={disabledStyle} value={form.trang_thai} onChange={e => set('trang_thai', e.target.value)} disabled={readOnly}>
             {TRANG_THAI_NV.map(t => <option key={t}>{t}</option>)}
           </select>
         </div>
         <div className="col-span-2">
           <label className={labelCls}>Ghi chú</label>
-          <textarea className={inputCls} rows={2} value={form.ghi_chu} onChange={e => set('ghi_chu', e.target.value)} placeholder="Ghi chú thêm..." />
+          <textarea className={inputCls} style={disabledStyle} rows={2} value={form.ghi_chu} onChange={e => set('ghi_chu', e.target.value)} placeholder="Ghi chú thêm..." disabled={readOnly} />
         </div>
       </div>
+
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
-        <button type="submit" className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600">Lưu</button>
+        <button type="button" onClick={onCancel}
+          className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">
+          {readOnly ? 'Đóng' : 'Hủy'}
+        </button>
+        {/* Ẩn hoàn toàn nút Lưu khi read-only */}
+        {!readOnly && (
+          <button type="submit" className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600">Lưu</button>
+        )}
       </div>
     </form>
   );
@@ -159,8 +184,9 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
   const [sort, setSort] = useState('ten_az');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null); // read-only view modal
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [activationModal, setActivationModal] = useState(null); // employee object
+  const [activationModal, setActivationModal] = useState(null);
 
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();
@@ -255,7 +281,15 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
           const managerName = getManagerName(emp.quan_ly_id);
 
           return (
-            <div key={emp.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-orange-200 transition-colors group">
+            <div
+              key={emp.id}
+              className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-orange-200 transition-colors group"
+              style={{ cursor: isEmployee && emp.id !== myEmployeeId ? 'pointer' : 'default' }}
+              onClick={() => {
+                // Employee click vào card người khác → mở read-only view
+                if (isEmployee && emp.id !== myEmployeeId) setViewing(emp);
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -269,10 +303,10 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
                   {/* Employee: chỉ được sửa hồ sơ của chính mình */}
                   {onUpdate && (!isEmployee || emp.id === myEmployeeId) && (
-                    <button onClick={() => setEditing(emp)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
+                    <button onClick={e => { e.stopPropagation(); setEditing(emp); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
                   )}
                   {onDelete && (
-                    <button onClick={() => setConfirmDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
+                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
                   )}
                 </div>
               </div>
@@ -363,6 +397,13 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
       {editing && (
         <Modal title="Chỉnh sửa nhân viên" onClose={() => setEditing(null)} size="md">
           <EmployeeForm initial={editing} employees={employees} onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
+        </Modal>
+      )}
+
+      {/* Read-only view modal — employee xem hồ sơ người khác */}
+      {viewing && (
+        <Modal title={`Hồ sơ nhân viên — ${viewing.ho_ten}`} onClose={() => setViewing(null)} size="md">
+          <EmployeeForm initial={viewing} employees={employees} onSubmit={() => {}} onCancel={() => setViewing(null)} readOnly={true} />
         </Modal>
       )}
       {onDelete && confirmDelete && (

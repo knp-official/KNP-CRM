@@ -84,8 +84,12 @@ function AppContent() {
   const { debts, addDebt, updateDebt, deleteDebt }                 = useDebts();
 
   // Derive auth-dependent values safely with optional chaining
-  const role        = userDoc?.vaiTro || 'employee';
-  const myEmployee  = employees.find(e => e.email === (userDoc?.email || ''));
+  const role = userDoc?.vaiTro || 'employee';
+
+  // Tìm employee record theo Firebase UID (uid) — đáng tin cậy hơn email
+  // vì employee login Phone+PIN có userDoc.email = '09xx@knp.internal',
+  // không match với email thực trong employees collection.
+  const myEmployee   = employees.find(e => e.uid === userDoc?.uid);
   const myEmployeeId = myEmployee?.id;
 
   // Kênh 1a: computed notifications (overdue, deadline, birthday…)
@@ -271,9 +275,17 @@ function AppContent() {
               employees={visibleEmployees}
               onAdd={g(addEmployee, p.employees.add)}
               onUpdate={
-                // Admin/Manager: full edit; Employee: chỉ update hồ sơ mình
-                // Guard per-row đã xử lý trong EmployeesPage (emp.id === myEmployeeId)
-                (p.employees.edit || isEmployee) ? updateEmployee : undefined
+                (p.employees.edit || isEmployee)
+                  ? (id, data) => {
+                      // Lớp bảo vệ server-side: employee chỉ được update hồ sơ mình
+                      console.log('[KNP] updateEmployee called:', { id, byRole: role, myEmployeeId });
+                      if (isEmployee && id !== myEmployeeId) {
+                        console.warn('[KNP] BLOCKED: employee attempted to update another employee:', id);
+                        return;
+                      }
+                      updateEmployee(id, data);
+                    }
+                  : undefined
               }
               onDelete={g(deleteEmployee, p.employees.del)}
               myEmployeeId={myEmployeeId}

@@ -8,7 +8,6 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import CustomersPage from './pages/CustomersPage';
-import ContactsPage from './pages/ContactsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import TasksPage from './pages/TasksPage';
 import QuotesPage from './pages/QuotesPage';
@@ -281,14 +280,6 @@ function AppContent() {
               onDeleteContact={g(deleteContact, p.contacts.del)}
               currentUserUid={currentUserUid}
               isEmployee={isEmployee}
-            />
-          )}
-          {tab === 'contacts' && (
-            <ContactsPage
-              contacts={contacts} customers={customers}
-              onAdd={g(addContact, p.contacts.add)}
-              onUpdate={g(updateContact, p.contacts.edit)}
-              onDelete={g(deleteContact, p.contacts.del)}
             />
           )}
           {tab === 'employees' && (

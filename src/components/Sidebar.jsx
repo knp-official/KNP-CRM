@@ -9,7 +9,6 @@ const navGroups = [
     label: 'QUAN HỆ KHÁCH HÀNG',
     items: [
       { id: 'customers', label: 'Khách hàng', icon: Building2 },
-      { id: 'contacts', label: 'Liên hệ', icon: Users },
     ],
   },
   {

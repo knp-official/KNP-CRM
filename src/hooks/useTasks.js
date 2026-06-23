@@ -6,25 +6,23 @@ function generateId() {
   return Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 }
 
-export function useTasks(isEmployeeMode = false, myEmployeeId = null, myUid = null) {
+export function useTasks(role = 'employee', myEmployeeId = null, myUid = null, mySubordinateIds = []) {
   const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
-    // Admin/Manager: fetch tất cả
-    if (!isEmployeeMode) {
+    // Admin: fetch tất cả
+    if (role === 'admin') {
       const unsub = onSnapshot(collection(db, 'tasks'), snap => {
         setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       });
       return unsub;
     }
 
-    // Employee: chờ đủ cả myUid VÀ myEmployeeId mới query
+    // Manager và Employee: chờ đủ myUid VÀ myEmployeeId
     if (!myUid || !myEmployeeId) {
       setTasks([]);
       return;
     }
-
-    console.log('[KNP] Employee task filter: myEmployeeId=', myEmployeeId, ', myUid=', myUid);
 
     let byAssignee = [];
     let byCreator = [];
@@ -36,22 +34,47 @@ export function useTasks(isEmployeeMode = false, myEmployeeId = null, myUid = nu
       setTasks([...map.values()]);
     }
 
-    // Query 1: task được giao cho employee này
-    const q1 = query(collection(db, 'tasks'), where('nhan_vien_id', '==', myEmployeeId));
-    unsubs.push(onSnapshot(q1, snap => {
-      byAssignee = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      merge();
-    }));
+    if (role === 'manager') {
+      // Manager thấy task của mình + task của nhân viên do mình quản lý
+      const visibleIds = [myEmployeeId, ...mySubordinateIds];
+      console.log('[KNP] Manager filter: visibleIds=', visibleIds);
 
-    // Query 2: task do employee này tạo
-    const q2 = query(collection(db, 'tasks'), where('created_by_uid', '==', myUid));
-    unsubs.push(onSnapshot(q2, snap => {
-      byCreator = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      merge();
-    }));
+      // Query task được giao cho manager hoặc subordinates
+      visibleIds.forEach(eid => {
+        const q = query(collection(db, 'tasks'), where('nhan_vien_id', '==', eid));
+        unsubs.push(onSnapshot(q, snap => {
+          const newTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          byAssignee = [...byAssignee.filter(t => !newTasks.find(n => n.id === t.id)), ...newTasks];
+          merge();
+        }));
+      });
+
+      // Query task do manager tạo
+      const q2 = query(collection(db, 'tasks'), where('created_by_uid', '==', myUid));
+      unsubs.push(onSnapshot(q2, snap => {
+        byCreator = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        merge();
+      }));
+
+    } else {
+      // Employee: chỉ thấy task của mình
+      console.log('[KNP] Employee filter: myEmployeeId=', myEmployeeId, 'myUid=', myUid);
+
+      const q1 = query(collection(db, 'tasks'), where('nhan_vien_id', '==', myEmployeeId));
+      unsubs.push(onSnapshot(q1, snap => {
+        byAssignee = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        merge();
+      }));
+
+      const q2 = query(collection(db, 'tasks'), where('created_by_uid', '==', myUid));
+      unsubs.push(onSnapshot(q2, snap => {
+        byCreator = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        merge();
+      }));
+    }
 
     return () => unsubs.forEach(u => u());
-  }, [isEmployeeMode, myEmployeeId, myUid]);
+  }, [role, myEmployeeId, myUid, JSON.stringify(mySubordinateIds)]);
 
   function addTask(data) {
     const id = generateId();

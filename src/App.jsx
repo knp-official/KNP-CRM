@@ -92,12 +92,18 @@ function AppContent() {
   const myEmployee   = employees.find(e => e.uid === currentUserUid);
   const myEmployeeId = myEmployee?.id;
 
-  // Employee: Firestore-level filter (2 queries merged in hook).
-  // Admin/manager: isEmployeeMode=false → hook fetches all tasks.
+  // Subordinates của manager: nhân viên có quan_ly_truc_tiep_id trỏ đến myEmployeeId
+  const mySubordinateIds = myEmployeeId
+    ? employees.filter(e => e.quan_ly_truc_tiep_id === myEmployeeId).map(e => e.id)
+    : [];
+
+  // useTasks nhận role để phân nhánh query ở tầng Firestore:
+  // admin → fetch all | manager → mình + subordinates | employee → chỉ mình
   const { tasks, addTask, updateTask, deleteTask } = useTasks(
-    isEmployee,
+    role,
     myEmployeeId ?? null,
     currentUserUid ?? null,
+    mySubordinateIds,
   );
 
   // Kênh 1a: computed notifications (overdue, deadline, birthday…)

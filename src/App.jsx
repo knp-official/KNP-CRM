@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
+import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
+import { createTaskNotification, sendZaloNotification } from './services/notificationService';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -38,12 +40,113 @@ function AppContent() {
   const myEmployee  = employees.find(e => e.email === (userDoc?.email || ''));
   const myEmployeeId = myEmployee?.id;
 
-  const { notifications, readIds, unreadCount, markAllRead, markRead } = useNotifications({
+  // Kênh 1a: computed notifications (overdue, deadline, birthday…)
+  const computed = useNotifications({
     tasks, employees, customers,
     myEmployeeId,
     role,
     userId: userDoc?.uid || userDoc?.id || 'anon',
   });
+
+  // Kênh 1b: Firestore realtime notifications (giao việc, cập nhật…)
+  const firestore = useFirestoreNotifications(userDoc?.uid || null);
+
+  // Merge: Firestore trước (mới nhất), computed sau — dedup by id (prefix khác nhau)
+  const notifications = useMemo(() => [
+    ...firestore.notifications,
+    ...computed.notifications,
+  ], [firestore.notifications, computed.notifications]);
+
+  const readIds = useMemo(() => [
+    ...firestore.readIds,
+    ...computed.readIds,
+  ], [firestore.readIds, computed.readIds]);
+
+  const unreadCount = firestore.unreadCount + computed.unreadCount;
+
+  function markRead(id) {
+    if (id.startsWith('fs_')) firestore.markRead(id);
+    else computed.markRead(id);
+  }
+
+  function markAllRead() {
+    firestore.markAllRead();
+    computed.markAllRead();
+  }
+
+  // ─── Wrappers giao việc — tự động tạo thông báo ───────────────────────────
+  const notifyAssignee = useCallback(async (task, type, extraSub = '') => {
+    const emp = employees.find(e => e.id === task.nhan_vien_id);
+    if (!emp) return;
+
+    const deadlineFmt = task.deadline
+      ? new Date(task.deadline).toLocaleString('vi-VN', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+      : '';
+
+    // In-app notification (chỉ nếu nhân viên đã kích hoạt tài khoản)
+    if (emp.uid) {
+      const titles = {
+        new_task:       'Công việc mới được giao',
+        task_updated:   'Công việc vừa được cập nhật',
+        task_completed: 'Công việc đã hoàn thành',
+      };
+      await createTaskNotification({
+        userId: emp.uid,
+        title: titles[type] || 'Thông báo công việc',
+        message: task.tieu_de,
+        sub: extraSub || (deadlineFmt ? `Hạn: ${deadlineFmt}` : ''),
+        type,
+        taskId: task.id,
+      });
+    }
+
+    // Zalo notification
+    const phone = emp.so_dien_thoai || emp.phone || '';
+    if (phone && (type === 'new_task' || type === 'task_updated')) {
+      sendZaloNotification(phone, task.tieu_de, task.deadline);
+    }
+  }, [employees]);
+
+  // Khi hoàn thành task → thông báo cho người tạo (admin hiện tại hoặc created_by)
+  const notifyCreator = useCallback(async (task) => {
+    const creatorUid = task.created_by_uid || userDoc?.uid;
+    if (!creatorUid || creatorUid === task.nhan_vien_uid) return;
+    await createTaskNotification({
+      userId: creatorUid,
+      title: 'Công việc đã hoàn thành',
+      message: task.tieu_de,
+      sub: 'Nhân viên vừa đánh dấu hoàn thành',
+      type: 'task_completed',
+      taskId: task.id,
+    });
+  }, [userDoc]);
+
+  function handleAddTask(data) {
+    const rec = addTask({ ...data, created_by_uid: userDoc?.uid });
+    notifyAssignee(rec, 'new_task');
+    return rec;
+  }
+
+  function handleUpdateTask(id, data) {
+    const prev = tasks.find(t => t.id === id);
+    updateTask(id, data);
+
+    if (prev) {
+      const deadlineChanged = data.deadline && data.deadline !== prev.deadline;
+      const priorityChanged = data.uu_tien && data.uu_tien !== prev.uu_tien;
+      const justCompleted   = data.trang_thai === 'Hoàn thành' && prev.trang_thai !== 'Hoàn thành';
+
+      if (justCompleted) {
+        notifyCreator({ ...prev, ...data, id });
+      } else if ((deadlineChanged || priorityChanged) && data.nhan_vien_id) {
+        const sub = deadlineChanged ? `Deadline mới: ${new Date(data.deadline).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : `Ưu tiên thay đổi: ${data.uu_tien}`;
+        notifyAssignee({ ...prev, ...data, id }, 'task_updated', sub);
+      }
+    }
+  }
 
   // ── Conditional renders AFTER all hooks ────────────────────────
   if (loading) {
@@ -111,7 +214,7 @@ function AppContent() {
           {currentTab === 'tasks' && (
             <TasksPage
               tasks={tasks} customers={customers} employees={employees}
-              onAdd={addTask} onUpdate={updateTask} onDelete={guard(deleteTask)}
+              onAdd={handleAddTask} onUpdate={handleUpdateTask} onDelete={guard(deleteTask)}
               myEmployeeId={role === 'employee' ? myEmployeeId : undefined}
             />
           )}

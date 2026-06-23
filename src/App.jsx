@@ -21,7 +21,55 @@ import { useTasks } from './hooks/useTasks';
 import { useQuotes } from './hooks/useQuotes';
 import { useDebts } from './hooks/useDebts';
 
-const EMPLOYEE_TABS = new Set(['dashboard', 'customers', 'tasks']);
+// Bảng phân quyền theo role
+const PERMS = {
+  admin: {
+    customers: { add: true,  edit: true,  del: true  },
+    contacts:  { add: true,  edit: true,  del: true  },
+    employees: { add: true,  edit: true,  del: true  },
+    tasks:     { add: true,  edit: true,  del: true  },
+    quotes:    { add: true,  edit: true,  del: true  },
+    debts:     { view: true, add: true,  edit: true,  del: true  },
+    reports:   { view: true },
+  },
+  manager: {
+    customers: { add: true,  edit: true,  del: false },
+    contacts:  { add: true,  edit: true,  del: false },
+    employees: { add: false, edit: true,  del: false },
+    tasks:     { add: true,  edit: true,  del: false },
+    quotes:    { add: true,  edit: true,  del: false },
+    debts:     { view: true, add: false, edit: false, del: false },
+    reports:   { view: true },
+  },
+  employee: {
+    customers: { add: false, edit: false, del: false },
+    contacts:  { add: false, edit: false, del: false },
+    employees: { add: false, edit: false, del: false },
+    tasks:     { add: false, edit: false, del: false },
+    quotes:    { add: false, edit: false, del: false },
+    debts:     { view: false },
+    reports:   { view: false },
+  },
+};
+
+function AccessDenied({ module }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', minHeight: '60vh', gap: '12px',
+      fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
+      <div style={{ fontSize: '52px', lineHeight: 1 }}>🔒</div>
+      <p style={{ fontSize: '17px', fontWeight: '700', color: '#414042', margin: 0 }}>
+        Bạn không có quyền truy cập
+      </p>
+      <p style={{ fontSize: '13px', color: '#999', margin: 0, textAlign: 'center', maxWidth: '300px' }}>
+        Module <strong>{module}</strong> chỉ dành cho Admin và Quản lý.<br />
+        Liên hệ cấp trên để được cấp quyền.
+      </p>
+    </div>
+  );
+}
 
 function AppContent() {
   const { user, userDoc, loading } = useAuth();
@@ -166,18 +214,13 @@ function AppContent() {
 
   if (!user || !userDoc) return <LoginPage />;
 
-  const canDelete  = role === 'admin';
-  const currentTab = (role === 'employee' && !EMPLOYEE_TABS.has(activeTab)) ? 'dashboard' : activeTab;
-  const guard      = fn => (canDelete ? fn : undefined);
-
-  function handleTabChange(tab) {
-    if (role === 'employee' && !EMPLOYEE_TABS.has(tab)) return;
-    setActiveTab(tab);
-  }
+  const p   = PERMS[role] || PERMS.employee;
+  const g   = (fn, allowed) => (allowed ? fn : undefined); // guard: trả undefined nếu không có quyền
+  const tab = activeTab;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
-      <Sidebar activeTab={currentTab} onTabChange={handleTabChange} role={role} />
+      <Sidebar activeTab={tab} onTabChange={setActiveTab} role={role} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
         <Header
           userDoc={userDoc}
@@ -186,56 +229,74 @@ function AppContent() {
           unreadCount={unreadCount}
           onMarkAllRead={markAllRead}
           onMarkRead={markRead}
-          onNavigate={handleTabChange}
+          onNavigate={setActiveTab}
         />
         <main style={{ flex: 1, overflowY: 'auto' }}>
-          {currentTab === 'dashboard' && (
+          {tab === 'dashboard' && (
             <Dashboard customers={customers} contacts={contacts} employees={employees} />
           )}
-          {currentTab === 'customers' && (
+          {tab === 'customers' && (
             <CustomersPage
               customers={customers} contacts={contacts}
-              onAdd={addCustomer} onUpdate={updateCustomer} onDelete={guard(deleteCustomer)}
-              onAddContact={addContact} onUpdateContact={updateContact} onDeleteContact={guard(deleteContact)}
+              onAdd={g(addCustomer, p.customers.add)}
+              onUpdate={g(updateCustomer, p.customers.edit)}
+              onDelete={g(deleteCustomer, p.customers.del)}
+              onAddContact={g(addContact, p.contacts.add)}
+              onUpdateContact={g(updateContact, p.contacts.edit)}
+              onDeleteContact={g(deleteContact, p.contacts.del)}
             />
           )}
-          {currentTab === 'contacts' && (
+          {tab === 'contacts' && (
             <ContactsPage
               contacts={contacts} customers={customers}
-              onAdd={addContact} onUpdate={updateContact} onDelete={guard(deleteContact)}
+              onAdd={g(addContact, p.contacts.add)}
+              onUpdate={g(updateContact, p.contacts.edit)}
+              onDelete={g(deleteContact, p.contacts.del)}
             />
           )}
-          {currentTab === 'employees' && (
+          {tab === 'employees' && (
             <EmployeesPage
-              employees={employees}
-              onAdd={addEmployee} onUpdate={updateEmployee} onDelete={guard(deleteEmployee)}
+              employees={role === 'employee' ? employees.filter(e => e.id === myEmployeeId) : employees}
+              onAdd={g(addEmployee, p.employees.add)}
+              onUpdate={g(updateEmployee, p.employees.edit)}
+              onDelete={g(deleteEmployee, p.employees.del)}
             />
           )}
-          {currentTab === 'tasks' && (
+          {tab === 'tasks' && (
             <TasksPage
               tasks={tasks} customers={customers} employees={employees}
-              onAdd={handleAddTask} onUpdate={handleUpdateTask} onDelete={guard(deleteTask)}
+              onAdd={g(handleAddTask, p.tasks.add)}
+              onUpdate={handleUpdateTask}
+              onDelete={g(deleteTask, p.tasks.del)}
               myEmployeeId={role === 'employee' ? myEmployeeId : undefined}
             />
           )}
-          {currentTab === 'quotes' && (
+          {tab === 'quotes' && (
             <QuotesPage
               quotes={quotes} customers={customers} employees={employees}
-              onAdd={addQuote} onUpdate={updateQuote} onDelete={guard(deleteQuote)}
-              onAddCustomer={addCustomer}
+              onAdd={g(addQuote, p.quotes.add)}
+              onUpdate={g(updateQuote, p.quotes.edit)}
+              onDelete={g(deleteQuote, p.quotes.del)}
+              onAddCustomer={g(addCustomer, p.customers.add)}
             />
           )}
-          {currentTab === 'debts' && (
-            <DebtsPage
-              debts={debts} customers={customers}
-              onAdd={addDebt} onUpdate={updateDebt} onDelete={guard(deleteDebt)}
-            />
+          {tab === 'debts' && (
+            p.debts.view
+              ? <DebtsPage
+                  debts={debts} customers={customers}
+                  onAdd={g(addDebt, p.debts.add)}
+                  onUpdate={g(updateDebt, p.debts.edit)}
+                  onDelete={g(deleteDebt, p.debts.del)}
+                />
+              : <AccessDenied module="Công nợ" />
           )}
-          {currentTab === 'reports' && (
-            <ReportsPage
-              customers={customers} contacts={contacts} employees={employees}
-              tasks={tasks} quotes={quotes} debts={debts}
-            />
+          {tab === 'reports' && (
+            p.reports.view
+              ? <ReportsPage
+                  customers={customers} contacts={contacts} employees={employees}
+                  tasks={tasks} quotes={quotes} debts={debts}
+                />
+              : <AccessDenied module="Báo cáo" />
           )}
         </main>
       </div>

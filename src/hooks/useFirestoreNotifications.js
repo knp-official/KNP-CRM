@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  collection, query, where, orderBy, limit,
+  collection, query, where,
   onSnapshot, updateDoc, doc, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -16,11 +16,10 @@ export function useFirestoreNotifications(userId) {
 
   useEffect(() => {
     if (!userId) { setRaw([]); return; }
+    // Chỉ dùng where đơn — không orderBy để tránh yêu cầu composite index Firestore
     const q = query(
       collection(db, 'notifications'),
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
-      limit(30),
     );
     const unsub = onSnapshot(q, snap => {
       setRaw(snap.docs.map(d => ({ _fsId: d.id, ...d.data() })));
@@ -31,7 +30,14 @@ export function useFirestoreNotifications(userId) {
     return unsub;
   }, [userId]);
 
-  const notifications = useMemo(() => raw.map(n => {
+  const notifications = useMemo(() => [...raw]
+    .sort((a, b) => {
+      const ta = a.createdAt?.toMillis?.() ?? 0;
+      const tb = b.createdAt?.toMillis?.() ?? 0;
+      return tb - ta; // mới nhất trước
+    })
+    .slice(0, 30)
+    .map(n => {
     const style = TYPE_STYLE[n.type] || TYPE_STYLE.new_task;
     return {
       id: `fs_${n._fsId}`,

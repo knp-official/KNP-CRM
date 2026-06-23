@@ -32,16 +32,8 @@ const navGroups = [
   },
 ];
 
-// Items visible to 'employee' role
-const EMPLOYEE_ITEM_IDS = new Set(['dashboard', 'customers', 'tasks']);
-
 export default function Sidebar({ activeTab, onTabChange, role = 'admin' }) {
-  const visibleGroups = navGroups
-    .map(g => ({
-      ...g,
-      items: role === 'employee' ? g.items.filter(i => EMPLOYEE_ITEM_IDS.has(i.id)) : g.items,
-    }))
-    .filter(g => g.items.length > 0);
+  const visibleGroups = navGroups;
   return (
     <div
       className="w-56 min-h-screen flex flex-col flex-shrink-0 border-r"

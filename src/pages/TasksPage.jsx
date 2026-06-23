@@ -214,7 +214,7 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
   );
 }
 
-export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId, myUid }) {
+export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmp, setFilterEmp] = useState('');
@@ -223,12 +223,8 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  // Employee: thấy task được giao cho mình HOẶC do mình tạo
-  const visibleTasks = myEmployeeId
-    ? tasks.filter(t => t.nhan_vien_id === myEmployeeId || (myUid && t.created_by_uid === myUid))
-    : tasks;
-
-  const filtered = visibleTasks.filter(t => {
+  // tasks is already Firestore-filtered for employees (by useTasks hook in App.jsx)
+  const filtered = tasks.filter(t => {
     const q = search.toLowerCase();
     const emp = employees.find(e => e.id === t.nhan_vien_id);
     return (!q || t.tieu_de.toLowerCase().includes(q))

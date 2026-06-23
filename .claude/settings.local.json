@@ -14,7 +14,17 @@
       "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/npm run *)",
       "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/node /Users/admin/.nvm/versions/node/v24.17.0/bin/npm run build)",
       "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm run build)",
-      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm install firebase)"
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm install firebase)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(npm run *)",
+      "Bash(/usr/local/bin/npm run *)",
+      "Bash(npx tsc *)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(~/.nvm/versions/node/v24.17.0/bin/node ~/.nvm/versions/node/v24.17.0/bin/vite build --root \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM\")",
+      "Bash(~/.nvm/versions/node/v24.17.0/bin/node \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM/node_modules/.bin/vite\" build --root \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM\")",
+      "Bash(~/.nvm/versions/node/v24.17.0/bin/node node_modules/.bin/vite build)"
     ]
   }
 }

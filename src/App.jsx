@@ -79,18 +79,26 @@ function AppContent() {
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { contacts, addContact, updateContact, deleteContact }     = useContacts();
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
-  const { tasks, addTask, updateTask, deleteTask }                 = useTasks();
   const { quotes, addQuote, updateQuote, deleteQuote }             = useQuotes();
   const { debts, addDebt, updateDebt, deleteDebt }                 = useDebts();
 
-  // Derive auth-dependent values safely with optional chaining
-  const role = userDoc?.vaiTro || 'employee';
+  // Derive identity before useTasks so we can pass Firestore-level filters
+  const role           = userDoc?.vaiTro || 'employee';
+  const isEmployee     = role === 'employee';
+  const currentUserUid = userDoc?.uid;
 
-  // Tìm employee record theo Firebase UID (uid) — đáng tin cậy hơn email
-  // vì employee login Phone+PIN có userDoc.email = '09xx@knp.internal',
-  // không match với email thực trong employees collection.
-  const myEmployee   = employees.find(e => e.uid === userDoc?.uid);
+  // Match by Firebase UID — phone+PIN users have userDoc.email = '09xx@knp.internal'
+  // which doesn't match the real email stored in employees collection.
+  const myEmployee   = employees.find(e => e.uid === currentUserUid);
   const myEmployeeId = myEmployee?.id;
+
+  // Employee: Firestore-level filter (2 queries merged in hook).
+  // Admin/manager: isEmployeeMode=false → hook fetches all tasks.
+  const { tasks, addTask, updateTask, deleteTask } = useTasks(
+    isEmployee,
+    myEmployeeId ?? null,
+    currentUserUid ?? null,
+  );
 
   // Kênh 1a: computed notifications (overdue, deadline, birthday…)
   const computed = useNotifications({
@@ -218,13 +226,20 @@ function AppContent() {
 
   if (!user || !userDoc) return <LoginPage />;
 
-  const p              = PERMS[role] || PERMS.employee;
-  const g              = (fn, allowed) => (allowed ? fn : undefined);
-  const tab            = activeTab;
-  const currentUserUid = userDoc?.uid;
-  const isEmployee     = role === 'employee';
+  const p   = PERMS[role] || PERMS.employee;
+  const g   = (fn, allowed) => (allowed ? fn : undefined);
+  const tab = activeTab;
 
-  // Employee: thấy tất cả nhân viên, nhưng không có quyền Thêm/Sửa/Xóa
+  // Data-layer guard: employee không được update hồ sơ bất kỳ ai
+  function handleUpdateEmployee(id, data) {
+    console.log('[KNP] updateEmployee called:', { id, byRole: role, myEmployeeId });
+    if (isEmployee) {
+      console.warn('[KNP] BLOCKED: employee role cannot update any employee profile');
+      return;
+    }
+    updateEmployee(id, data);
+  }
+
   const visibleEmployees = employees;
 
   // Employee add customer → tự động gán managedBy
@@ -274,19 +289,7 @@ function AppContent() {
             <EmployeesPage
               employees={visibleEmployees}
               onAdd={g(addEmployee, p.employees.add)}
-              onUpdate={
-                (p.employees.edit || isEmployee)
-                  ? (id, data) => {
-                      // Lớp bảo vệ server-side: employee chỉ được update hồ sơ mình
-                      console.log('[KNP] updateEmployee called:', { id, byRole: role, myEmployeeId });
-                      if (isEmployee && id !== myEmployeeId) {
-                        console.warn('[KNP] BLOCKED: employee attempted to update another employee:', id);
-                        return;
-                      }
-                      updateEmployee(id, data);
-                    }
-                  : undefined
-              }
+              onUpdate={isEmployee ? null : (p.employees.edit ? handleUpdateEmployee : null)}
               onDelete={g(deleteEmployee, p.employees.del)}
               myEmployeeId={myEmployeeId}
               isEmployee={isEmployee}
@@ -298,8 +301,7 @@ function AppContent() {
               onAdd={g(handleAddTask, p.tasks.add)}
               onUpdate={handleUpdateTask}
               onDelete={g(deleteTask, p.tasks.del)}
-              myEmployeeId={isEmployee ? myEmployeeId : undefined}
-              myUid={isEmployee ? currentUserUid : undefined}
+              myEmployeeId={myEmployeeId}
             />
           )}
           {tab === 'quotes' && (

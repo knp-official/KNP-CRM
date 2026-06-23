@@ -76,6 +76,66 @@ function applySort(list, sort) {
   }
 }
 
+/* ── ViewEmployeeModal: chỉ xem, tất cả input disabled ───────────── */
+function ViewEmployeeModal({ emp, employees, onClose }) {
+  const managerName = employees.find(e => e.id === emp.quan_ly_id)?.ho_ten || '';
+  const field = (label, value) => (
+    <div>
+      <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
+      <p style={{ fontSize: '14px', color: '#414042', padding: '8px 12px', backgroundColor: '#F8F8F8', borderRadius: '8px', border: '1px solid #E8E8E8', minHeight: '36px' }}>{value || '—'}</p>
+    </div>
+  );
+  return (
+    <Modal title="Thông tin nhân viên 🔒" onClose={onClose} size="md">
+      <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        {/* Banner */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: '#FFF5F0', border: '1px solid #FDDCCA', borderRadius: '10px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '16px' }}>🔒</span>
+          <span style={{ fontSize: '13px', color: '#C2440E', fontWeight: '600' }}>Chế độ chỉ xem — bạn không thể chỉnh sửa hồ sơ này</span>
+        </div>
+        {/* Avatar + tên */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#F15A22,#E04410)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <span style={{ color: '#fff', fontWeight: '700', fontSize: '22px' }}>{emp.ho_ten?.charAt(0)}</span>
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#1A1A1A' }}>{emp.ho_ten}</p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>{emp.chuc_vu} · {emp.phong_ban}</p>
+          </div>
+        </div>
+        {/* Fields */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          {field('Chức vụ', emp.chuc_vu)}
+          {field('Phòng ban', emp.phong_ban)}
+          {field('Vai trò', emp.vai_tro)}
+          {field('Trạng thái', emp.trang_thai)}
+          {field('Điện thoại', emp.dien_thoai)}
+          {field('Email', emp.email)}
+          {field('Ngày vào làm', emp.ngay_vao_lam)}
+          {field('Ngày sinh', emp.ngay_sinh)}
+        </div>
+        {managerName && (
+          <div style={{ marginBottom: '12px' }}>
+            {field('Quản lý trực tiếp', managerName)}
+          </div>
+        )}
+        {emp.ghi_chu && (
+          <div style={{ marginBottom: '12px' }}>
+            {field('Ghi chú', emp.ghi_chu)}
+          </div>
+        )}
+        {/* Close button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+          <button
+            onClick={onClose}
+            style={{ padding: '9px 24px', fontSize: '14px', fontWeight: '600', backgroundColor: '#F15A22', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+          >Đóng</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false }) {
   const empty = {
     ho_ten: '', chuc_vu: '', phong_ban: 'Phòng Kinh doanh', vai_tro: 'Nhân viên',
@@ -206,6 +266,17 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
     return mgr ? mgr.ho_ten : null;
   }
 
+  // Routing logic: admin/manager → edit; employee → always view (onUpdate is null for employees)
+  function handleCardClick(emp) {
+    if (typeof onUpdate === 'function' && !isEmployee) {
+      // Admin / manager: click bất kỳ card nào → edit
+      setEditing(emp);
+    } else {
+      // Employee (onUpdate === null): luôn luôn view, không bao giờ edit
+      setViewing(emp);
+    }
+  }
+
   return (
     <div className="p-6 space-y-4">
       {/* Header */}
@@ -284,11 +355,8 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
             <div
               key={emp.id}
               className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-orange-200 transition-colors group"
-              style={{ cursor: isEmployee && emp.id !== myEmployeeId ? 'pointer' : 'default' }}
-              onClick={() => {
-                // Employee click vào card người khác → mở read-only view
-                if (isEmployee && emp.id !== myEmployeeId) setViewing(emp);
-              }}
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleCardClick(emp)}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -301,10 +369,6 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
                   </div>
                 </div>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
-                  {/* Employee: chỉ được sửa hồ sơ của chính mình */}
-                  {onUpdate && (!isEmployee || emp.id === myEmployeeId) && (
-                    <button onClick={e => { e.stopPropagation(); setEditing(emp); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
-                  )}
                   {onDelete && (
                     <button onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
                   )}
@@ -400,11 +464,9 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
         </Modal>
       )}
 
-      {/* Read-only view modal — employee xem hồ sơ người khác */}
+      {/* ViewEmployeeModal — chỉ xem, không chỉnh sửa */}
       {viewing && (
-        <Modal title={`Hồ sơ nhân viên — ${viewing.ho_ten}`} onClose={() => setViewing(null)} size="md">
-          <EmployeeForm initial={viewing} employees={employees} onSubmit={() => {}} onCancel={() => setViewing(null)} readOnly={true} />
-        </Modal>
+        <ViewEmployeeModal emp={viewing} employees={employees} onClose={() => setViewing(null)} />
       )}
       {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">

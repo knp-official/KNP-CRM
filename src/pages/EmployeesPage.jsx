@@ -153,7 +153,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel }) {
   );
 }
 
-export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) {
+export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee }) {
   const [search, setSearch] = useState('');
   const [filterPB, setFilterPB] = useState('');
   const [sort, setSort] = useState('ten_az');
@@ -199,9 +199,11 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
             </select>
             <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600">
-            <Plus size={16} /> Thêm nhân viên
-          </button>
+          {onAdd && (
+            <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600">
+              <Plus size={16} /> Thêm nhân viên
+            </button>
+          )}
         </div>
       </div>
 
@@ -265,8 +267,13 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
                   </div>
                 </div>
                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
-                  <button onClick={() => setEditing(emp)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
-                  {onDelete && <button onClick={() => setConfirmDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>}
+                  {/* Employee: chỉ được sửa hồ sơ của chính mình */}
+                  {onUpdate && (!isEmployee || emp.id === myEmployeeId) && (
+                    <button onClick={() => setEditing(emp)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded"><Edit2 size={13} /></button>
+                  )}
+                  {onDelete && (
+                    <button onClick={() => setConfirmDelete(emp.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
+                  )}
                 </div>
               </div>
 

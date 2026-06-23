@@ -270,8 +270,14 @@ function AppContent() {
             <EmployeesPage
               employees={visibleEmployees}
               onAdd={g(addEmployee, p.employees.add)}
-              onUpdate={g(updateEmployee, p.employees.edit)}
+              onUpdate={
+                // Admin/Manager: full edit; Employee: chỉ update hồ sơ mình
+                // Guard per-row đã xử lý trong EmployeesPage (emp.id === myEmployeeId)
+                (p.employees.edit || isEmployee) ? updateEmployee : undefined
+              }
               onDelete={g(deleteEmployee, p.employees.del)}
+              myEmployeeId={myEmployeeId}
+              isEmployee={isEmployee}
             />
           )}
           {tab === 'tasks' && (

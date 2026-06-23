@@ -15,7 +15,7 @@ const navGroups = [
   {
     label: 'VẬN HÀNH',
     items: [
-      { id: 'employees', label: 'Nhân viên', icon: UserCheck },
+      { id: 'employees', label: 'Nhân sự', icon: UserCheck },
       { id: 'tasks', label: 'Giao việc', icon: ClipboardList },
     ],
   },

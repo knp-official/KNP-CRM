@@ -1,7 +1,19 @@
 import { useState } from 'react';
-import { Plus, Search, UserCheck, Phone, Mail, Edit2, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users } from 'lucide-react';
+import { Plus, Search, UserCheck, Phone, Mail, Edit2, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users, UserPlus, CheckCircle2, Clock } from 'lucide-react';
 import Modal from '../components/Modal';
 import { PHONG_BAN, TRANG_THAI_NV, VAI_TRO_NV } from '../data/sampleData';
+
+/* ── Account status styles (inline) ───────────────────────── */
+const ACCT_STATUS = {
+  active: {
+    bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0',
+    label: 'Đang hoạt động', icon: '●',
+  },
+  pending: {
+    bg: '#FFFBEB', color: '#92400E', border: '#FDE68A',
+    label: 'Chưa kích hoạt', icon: '○',
+  },
+};
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400';
 const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
@@ -148,6 +160,7 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [activationModal, setActivationModal] = useState(null); // employee object
 
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();
@@ -269,6 +282,29 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
                 </span>
               </div>
 
+              {/* Account status badge */}
+              {(() => {
+                const acct = emp.accountStatus === 'active' ? ACCT_STATUS.active : ACCT_STATUS.pending;
+                const isPending = emp.accountStatus !== 'active';
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: acct.bg, color: acct.color, border: `1px solid ${acct.border}` }}>
+                      <span style={{ fontSize: '8px' }}>{acct.icon}</span>{acct.label}
+                    </span>
+                    {isPending && emp.dien_thoai && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setActivationModal(emp); }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: 'transparent', color: '#F15A22', border: '1px solid #FDDCCA', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FFF5F0'; }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        <UserPlus size={10} /> Hướng dẫn kích hoạt
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="space-y-1.5 border-t border-slate-100 pt-3">
                 {managerName && (
                   <p className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -314,7 +350,7 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
 
       {showForm && (
         <Modal title="Thêm nhân viên" onClose={() => setShowForm(false)} size="md">
-          <EmployeeForm employees={employees} onSubmit={d => { onAdd(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
+          <EmployeeForm employees={employees} onSubmit={d => { onAdd({ ...d, accountStatus: 'pending', uid: null }); setShowForm(false); }} onCancel={() => setShowForm(false)} />
         </Modal>
       )}
       {editing && (
@@ -328,6 +364,58 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete }) 
           <div className="flex justify-end gap-3">
             <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
             <button onClick={() => { onDelete(confirmDelete); setConfirmDelete(null); }} className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600">Xóa</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Activation instructions modal */}
+      {activationModal && (
+        <Modal title="Hướng dẫn kích hoạt tài khoản" onClose={() => setActivationModal(null)} size="sm">
+          <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FFF5F0', borderRadius: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '44px', height: '44px', backgroundColor: '#F15A22', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ color: '#fff', fontWeight: '700', fontSize: '18px' }}>{activationModal.ho_ten?.charAt(0)}</span>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontWeight: '700', fontSize: '15px', color: '#1A1A1A' }}>{activationModal.ho_ten}</p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>{activationModal.chuc_vu} · {activationModal.phong_ban}</p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '14px', color: '#414042', marginBottom: '16px', lineHeight: '1.6' }}>
+              Yêu cầu nhân viên thực hiện các bước sau để kích hoạt tài khoản:
+            </p>
+
+            {[
+              { num: '1', text: 'Mở trình duyệt và truy cập hệ thống KNP CRM' },
+              { num: '2', text: <>Chọn tab <strong>"Số điện thoại"</strong> trên màn hình đăng nhập</> },
+              { num: '3', text: <>Nhập SĐT: <strong style={{ color: '#F15A22' }}>{activationModal.dien_thoai}</strong></> },
+              {
+                num: '4',
+                text: <>Nhập mã PIN mặc định: <strong style={{ color: '#F15A22', fontSize: '16px', letterSpacing: '2px' }}>
+                  {activationModal.dien_thoai ? activationModal.dien_thoai.replace(/\D/g, '').slice(-6) : '______'}
+                </strong> (6 số cuối SĐT)</>,
+              },
+              { num: '5', text: 'Nhấn "Đăng nhập" — hệ thống tự kích hoạt tài khoản' },
+            ].map(step => (
+              <div key={step.num} style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start' }}>
+                <span style={{ width: '24px', height: '24px', backgroundColor: '#F15A22', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0, marginTop: '1px' }}>{step.num}</span>
+                <p style={{ margin: 0, fontSize: '14px', color: '#414042', lineHeight: '1.6' }}>{step.text}</p>
+              </div>
+            ))}
+
+            <div style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '10px 12px', marginTop: '16px', fontSize: '12px', color: '#92400E', lineHeight: '1.5' }}>
+              🔒 Không cần SMS hay OTP — hệ thống xác thực bằng PIN nội bộ. Nhân viên có thể đổi PIN sau khi đăng nhập.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button
+                onClick={() => setActivationModal(null)}
+                style={{ padding: '8px 20px', backgroundColor: '#F15A22', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Đã hiểu
+              </button>
+            </div>
           </div>
         </Modal>
       )}

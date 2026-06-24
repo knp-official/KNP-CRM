@@ -253,11 +253,18 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F5F5' }}>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; }
+      `}</style>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
       <Sidebar activeTab={tab} onTabChange={setActiveTab} role={role} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
         <Header
           userDoc={userDoc}
+          activeTab={tab}
           notifications={notifications}
           readIds={readIds}
           unreadCount={unreadCount}
@@ -332,6 +339,7 @@ function AppContent() {
         </main>
       </div>
     </div>
+    </>
   );
 }
 

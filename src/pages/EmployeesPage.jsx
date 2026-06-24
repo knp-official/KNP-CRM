@@ -1,51 +1,47 @@
 import { useState } from 'react';
-import { Plus, Search, UserCheck, Phone, Mail, Edit2, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users, UserPlus, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Search, UserCheck, Phone, Mail, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users, UserPlus } from 'lucide-react';
 import Modal from '../components/Modal';
 import { PHONG_BAN, TRANG_THAI_NV, VAI_TRO_NV } from '../data/sampleData';
 
-/* ── Account status styles (inline) ───────────────────────── */
+/* ── Design tokens ────────────────────────────────────────────────────── */
+const PRIMARY   = '#E8500A';
+const TEXT1     = '#1A1D23';
+const TEXT2     = '#6B7280';
+const BORDER    = '#E8ECF0';
+const CARD_SHADOW = '0 1px 3px rgba(0,0,0,0.08)';
+
 const ACCT_STATUS = {
-  active: {
-    bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0',
-    label: 'Đang hoạt động', icon: '●',
-  },
-  pending: {
-    bg: '#FFFBEB', color: '#92400E', border: '#FDE68A',
-    label: 'Chưa kích hoạt', icon: '○',
-  },
+  active:  { bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0', label: 'Đang hoạt động', icon: '●' },
+  pending: { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A', label: 'Chưa kích hoạt',  icon: '○' },
 };
 
-const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400';
-const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
-
-const statusColors = {
-  'Đang làm việc': 'bg-emerald-100 text-emerald-700',
-  'Nghỉ phép': 'bg-yellow-100 text-yellow-700',
-  'Đã nghỉ việc': 'bg-slate-100 text-slate-500',
+const STATUS_COLORS = {
+  'Đang làm việc': { bg: '#ECFDF5', color: '#059669' },
+  'Nghỉ phép':     { bg: '#FFFBEB', color: '#B45309' },
+  'Đã nghỉ việc':  { bg: '#F3F4F6', color: '#6B7280' },
 };
 
-const roleStyle = {
-  'Admin':    { cls: 'bg-red-100 text-red-700',    label: 'Admin' },
-  'Quản lý':  { cls: 'bg-orange-100 text-orange-700', label: 'Quản lý' },
-  'Nhân viên':{ cls: 'bg-slate-100 text-slate-500',  label: 'Nhân viên' },
+const ROLE_STYLE = {
+  'Admin':     { bg: '#FEE2E2', color: '#B91C1C' },
+  'Quản lý':   { bg: '#FFEDD5', color: '#C2410C' },
+  'Nhân viên': { bg: '#F3F4F6', color: '#374151' },
 };
 
 const SORT_OPTIONS = [
-  { value: 'ten_az',      label: 'Tên A → Z' },
-  { value: 'ten_za',      label: 'Tên Z → A' },
-  { value: 'chucvu_az',   label: 'Chức vụ A → Z' },
-  { value: 'chucvu_za',   label: 'Chức vụ Z → A' },
-  { value: 'vao_lam_moi', label: 'Ngày vào làm mới nhất' },
-  { value: 'vao_lam_cu',  label: 'Ngày vào làm cũ nhất' },
-  { value: 'tuoi_lon',    label: 'Tuổi lớn nhất' },
-  { value: 'tuoi_nho',    label: 'Tuổi nhỏ nhất' },
+  { value: 'ten_az',        label: 'Tên A → Z' },
+  { value: 'ten_za',        label: 'Tên Z → A' },
+  { value: 'chucvu_az',     label: 'Chức vụ A → Z' },
+  { value: 'chucvu_za',     label: 'Chức vụ Z → A' },
+  { value: 'vao_lam_moi',   label: 'Ngày vào làm mới nhất' },
+  { value: 'vao_lam_cu',    label: 'Ngày vào làm cũ nhất' },
+  { value: 'tuoi_lon',      label: 'Tuổi lớn nhất' },
+  { value: 'tuoi_nho',      label: 'Tuổi nhỏ nhất' },
   { value: 'sinh_nhat_gan', label: 'Sinh nhật gần nhất' },
 ];
 
 function calcAge(ngay_sinh) {
   if (!ngay_sinh) return null;
-  const today = new Date();
-  const birth = new Date(ngay_sinh);
+  const today = new Date(), birth = new Date(ngay_sinh);
   let age = today.getFullYear() - birth.getFullYear();
   if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
   return age;
@@ -53,8 +49,7 @@ function calcAge(ngay_sinh) {
 
 function daysUntilBirthday(ngay_sinh) {
   if (!ngay_sinh) return 9999;
-  const today = new Date();
-  const birth = new Date(ngay_sinh);
+  const today = new Date(), birth = new Date(ngay_sinh);
   const next = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
   if (next < today) next.setFullYear(today.getFullYear() + 1);
   return Math.round((next - today) / 86400000);
@@ -76,34 +71,31 @@ function applySort(list, sort) {
   }
 }
 
-/* ── ViewEmployeeModal: chỉ xem, tất cả input disabled ───────────── */
+/* ── ViewEmployeeModal ──────────────────────────────────────────────── */
 function ViewEmployeeModal({ emp, employees, onClose }) {
   const managerName = employees.find(e => e.id === emp.quan_ly_id)?.ho_ten || '';
   const field = (label, value) => (
     <div>
-      <p style={{ fontSize: '12px', fontWeight: '600', color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-      <p style={{ fontSize: '14px', color: '#414042', padding: '8px 12px', backgroundColor: '#F8F8F8', borderRadius: '8px', border: '1px solid #E8E8E8', minHeight: '36px' }}>{value || '—'}</p>
+      <p style={{ fontSize: '11px', fontWeight: '600', color: TEXT2, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>{label}</p>
+      <p style={{ fontSize: '14px', color: TEXT1, padding: '8px 12px', backgroundColor: '#F9FAFB', borderRadius: '8px', border: `1px solid ${BORDER}`, minHeight: '36px', margin: 0 }}>{value || '—'}</p>
     </div>
   );
   return (
-    <Modal title="Thông tin nhân viên 🔒" onClose={onClose} size="md">
+    <Modal title="Thông tin nhân viên" onClose={onClose} size="md">
       <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        {/* Banner */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: '#FFF5F0', border: '1px solid #FDDCCA', borderRadius: '10px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '16px' }}>🔒</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', backgroundColor: '#FFF3EE', border: '1px solid #FDDCCA', borderRadius: '10px', marginBottom: '20px' }}>
+          <span style={{ fontSize: '15px' }}>🔒</span>
           <span style={{ fontSize: '13px', color: '#C2440E', fontWeight: '600' }}>Chế độ chỉ xem — bạn không thể chỉnh sửa hồ sơ này</span>
         </div>
-        {/* Avatar + tên */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
-          <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#F15A22,#E04410)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg,#E8500A,#C2440E)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <span style={{ color: '#fff', fontWeight: '700', fontSize: '22px' }}>{emp.ho_ten?.charAt(0)}</span>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#1A1A1A' }}>{emp.ho_ten}</p>
-            <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>{emp.chuc_vu} · {emp.phong_ban}</p>
+            <p style={{ margin: '0 0 2px', fontSize: '17px', fontWeight: '700', color: TEXT1 }}>{emp.ho_ten}</p>
+            <p style={{ margin: 0, fontSize: '13px', color: TEXT2 }}>{emp.chuc_vu} · {emp.phong_ban}</p>
           </div>
         </div>
-        {/* Fields */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
           {field('Chức vụ', emp.chuc_vu)}
           {field('Phòng ban', emp.phong_ban)}
@@ -114,137 +106,114 @@ function ViewEmployeeModal({ emp, employees, onClose }) {
           {field('Ngày vào làm', emp.ngay_vao_lam)}
           {field('Ngày sinh', emp.ngay_sinh)}
         </div>
-        {managerName && (
-          <div style={{ marginBottom: '12px' }}>
-            {field('Quản lý trực tiếp', managerName)}
-          </div>
-        )}
-        {emp.ghi_chu && (
-          <div style={{ marginBottom: '12px' }}>
-            {field('Ghi chú', emp.ghi_chu)}
-          </div>
-        )}
-        {/* Close button */}
+        {managerName && <div style={{ marginBottom: '12px' }}>{field('Quản lý trực tiếp', managerName)}</div>}
+        {emp.ghi_chu && <div style={{ marginBottom: '12px' }}>{field('Ghi chú', emp.ghi_chu)}</div>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <button
-            onClick={onClose}
-            style={{ padding: '9px 24px', fontSize: '14px', fontWeight: '600', backgroundColor: '#F15A22', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-          >Đóng</button>
+          <button onClick={onClose} style={{ padding: '9px 24px', fontSize: '14px', fontWeight: '600', backgroundColor: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit' }}>Đóng</button>
         </div>
       </div>
     </Modal>
   );
 }
 
+/* ── EmployeeForm ───────────────────────────────────────────────────── */
+const inputS = {
+  width: '100%', border: `1px solid ${BORDER}`, borderRadius: '8px',
+  padding: '8px 12px', fontSize: '14px', color: TEXT1, outline: 'none',
+  fontFamily: "'Inter', system-ui, sans-serif", boxSizing: 'border-box',
+  backgroundColor: '#fff',
+};
+const labelS = { display: 'block', fontSize: '13px', fontWeight: '500', color: TEXT2, marginBottom: '5px' };
+
 function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false }) {
-  const empty = {
-    ho_ten: '', chuc_vu: '', phong_ban: 'Phòng Kinh doanh', vai_tro: 'Nhân viên',
-    quan_ly_id: '', dien_thoai: '', email: '', ngay_vao_lam: '', ngay_sinh: '',
-    trang_thai: 'Đang làm việc', ghi_chu: '',
-  };
+  const empty = { ho_ten: '', chuc_vu: '', phong_ban: 'Phòng Kinh doanh', vai_tro: 'Nhân viên', quan_ly_id: '', dien_thoai: '', email: '', ngay_vao_lam: '', ngay_sinh: '', trang_thai: 'Đang làm việc', ghi_chu: '' };
   const [form, setForm] = useState(initial || empty);
   const set = (f, v) => { if (!readOnly) setForm(p => ({ ...p, [f]: v })); };
-
   const managerOptions = employees.filter(e => e.id !== initial?.id);
-
-  // Inline style cho input bị disabled
-  const disabledStyle = readOnly
-    ? { backgroundColor: '#F8F8F8', color: '#666', cursor: 'not-allowed', opacity: 0.85 }
-    : {};
+  const dis = readOnly ? { backgroundColor: '#F9FAFB', color: TEXT2, cursor: 'not-allowed', opacity: 0.8 } : {};
 
   return (
-    <form onSubmit={e => { e.preventDefault(); if (readOnly || !form.ho_ten.trim()) return; onSubmit(form); }} className="space-y-4">
-      {/* Banner read-only */}
+    <form onSubmit={e => { e.preventDefault(); if (readOnly || !form.ho_ten.trim()) return; onSubmit(form); }} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {readOnly && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px',
-          padding: '10px 14px', borderRadius: '8px',
-          backgroundColor: '#FFFBEB', border: '1px solid #FDE68A',
-          fontSize: '13px', color: '#92400E', fontFamily: "'Inter', system-ui, sans-serif",
-          marginBottom: '4px',
-        }}>
-          <span style={{ fontSize: '15px' }}>🔒</span>
-          <span>Bạn không có quyền chỉnh sửa thông tin này.</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', fontSize: '13px', color: '#92400E', marginBottom: '16px' }}>
+          <span>🔒</span><span>Bạn không có quyền chỉnh sửa thông tin này.</span>
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <label className={labelCls}>Họ và tên</label>
-          <input className={inputCls} style={disabledStyle} value={form.ho_ten} onChange={e => set('ho_ten', e.target.value)} placeholder="Nguyễn Văn A" disabled={readOnly} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={labelS}>Họ và tên</label>
+          <input style={{ ...inputS, ...dis }} value={form.ho_ten} onChange={e => set('ho_ten', e.target.value)} placeholder="Nguyễn Văn A" disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Chức vụ</label>
-          <input className={inputCls} style={disabledStyle} value={form.chuc_vu} onChange={e => set('chuc_vu', e.target.value)} placeholder="Nhân viên kinh doanh..." disabled={readOnly} />
+          <label style={labelS}>Chức vụ</label>
+          <input style={{ ...inputS, ...dis }} value={form.chuc_vu} onChange={e => set('chuc_vu', e.target.value)} placeholder="Nhân viên kinh doanh..." disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Phòng ban</label>
-          <select className={inputCls} style={disabledStyle} value={form.phong_ban} onChange={e => set('phong_ban', e.target.value)} disabled={readOnly}>
+          <label style={labelS}>Phòng ban</label>
+          <select style={{ ...inputS, ...dis }} value={form.phong_ban} onChange={e => set('phong_ban', e.target.value)} disabled={readOnly}>
             {PHONG_BAN.map(p => <option key={p}>{p}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>Vai trò hệ thống</label>
-          <select className={inputCls} style={disabledStyle} value={form.vai_tro || 'Nhân viên'} onChange={e => set('vai_tro', e.target.value)} disabled={readOnly}>
+          <label style={labelS}>Vai trò hệ thống</label>
+          <select style={{ ...inputS, ...dis }} value={form.vai_tro || 'Nhân viên'} onChange={e => set('vai_tro', e.target.value)} disabled={readOnly}>
             {VAI_TRO_NV.map(v => <option key={v}>{v}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>Người quản lý trực tiếp</label>
-          <select className={inputCls} style={disabledStyle} value={form.quan_ly_id || ''} onChange={e => set('quan_ly_id', e.target.value)} disabled={readOnly}>
+          <label style={labelS}>Người quản lý trực tiếp</label>
+          <select style={{ ...inputS, ...dis }} value={form.quan_ly_id || ''} onChange={e => set('quan_ly_id', e.target.value)} disabled={readOnly}>
             <option value="">— Không có —</option>
             {managerOptions.map(e => <option key={e.id} value={e.id}>{e.ho_ten} ({e.chuc_vu || e.phong_ban})</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>Điện thoại</label>
-          <input className={inputCls} style={disabledStyle} value={form.dien_thoai} onChange={e => set('dien_thoai', e.target.value)} placeholder="09xxxxxxxx" disabled={readOnly} />
+          <label style={labelS}>Điện thoại</label>
+          <input style={{ ...inputS, ...dis }} value={form.dien_thoai} onChange={e => set('dien_thoai', e.target.value)} placeholder="09xxxxxxxx" disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Email</label>
-          <input type="email" className={inputCls} style={disabledStyle} value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@knp.vn" disabled={readOnly} />
+          <label style={labelS}>Email</label>
+          <input type="email" style={{ ...inputS, ...dis }} value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@knp.vn" disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Ngày sinh</label>
-          <input type="date" className={inputCls} style={disabledStyle} value={form.ngay_sinh} onChange={e => set('ngay_sinh', e.target.value)} disabled={readOnly} />
+          <label style={labelS}>Ngày sinh</label>
+          <input type="date" style={{ ...inputS, ...dis }} value={form.ngay_sinh} onChange={e => set('ngay_sinh', e.target.value)} disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Ngày vào làm</label>
-          <input type="date" className={inputCls} style={disabledStyle} value={form.ngay_vao_lam} onChange={e => set('ngay_vao_lam', e.target.value)} disabled={readOnly} />
+          <label style={labelS}>Ngày vào làm</label>
+          <input type="date" style={{ ...inputS, ...dis }} value={form.ngay_vao_lam} onChange={e => set('ngay_vao_lam', e.target.value)} disabled={readOnly} />
         </div>
         <div>
-          <label className={labelCls}>Trạng thái</label>
-          <select className={inputCls} style={disabledStyle} value={form.trang_thai} onChange={e => set('trang_thai', e.target.value)} disabled={readOnly}>
+          <label style={labelS}>Trạng thái</label>
+          <select style={{ ...inputS, ...dis }} value={form.trang_thai} onChange={e => set('trang_thai', e.target.value)} disabled={readOnly}>
             {TRANG_THAI_NV.map(t => <option key={t}>{t}</option>)}
           </select>
         </div>
-        <div className="col-span-2">
-          <label className={labelCls}>Ghi chú</label>
-          <textarea className={inputCls} style={disabledStyle} rows={2} value={form.ghi_chu} onChange={e => set('ghi_chu', e.target.value)} placeholder="Ghi chú thêm..." disabled={readOnly} />
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={labelS}>Ghi chú</label>
+          <textarea style={{ ...inputS, ...dis, resize: 'vertical', minHeight: '64px' }} rows={2} value={form.ghi_chu} onChange={e => set('ghi_chu', e.target.value)} placeholder="Ghi chú thêm..." disabled={readOnly} />
         </div>
       </div>
-
-      <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
-        <button type="button" onClick={onCancel}
-          className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '18px', paddingTop: '16px', borderTop: `1px solid ${BORDER}` }}>
+        <button type="button" onClick={onCancel} style={{ padding: '8px 18px', fontSize: '14px', border: `1px solid ${BORDER}`, borderRadius: '8px', backgroundColor: '#fff', color: TEXT1, cursor: 'pointer', fontFamily: 'inherit' }}>
           {readOnly ? 'Đóng' : 'Hủy'}
         </button>
-        {/* Ẩn hoàn toàn nút Lưu khi read-only */}
         {!readOnly && (
-          <button type="submit" className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600">Lưu</button>
+          <button type="submit" style={{ padding: '8px 18px', fontSize: '14px', fontWeight: '600', backgroundColor: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit' }}>Lưu</button>
         )}
       </div>
     </form>
   );
 }
 
+/* ── Main page ──────────────────────────────────────────────────────── */
 export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee }) {
-  const [search, setSearch] = useState('');
-  const [filterPB, setFilterPB] = useState('');
-  const [sort, setSort] = useState('ten_az');
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [viewing, setViewing] = useState(null); // read-only view modal
+  const [search, setSearch]         = useState('');
+  const [filterPB, setFilterPB]     = useState('');
+  const [sort, setSort]             = useState('ten_az');
+  const [showForm, setShowForm]     = useState(false);
+  const [editing, setEditing]       = useState(null);
+  const [viewing, setViewing]       = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [activationModal, setActivationModal] = useState(null);
 
@@ -253,51 +222,42 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
     return (!q || e.ho_ten.toLowerCase().includes(q) || e.chuc_vu?.toLowerCase().includes(q) || e.dien_thoai?.includes(q))
       && (!filterPB || e.phong_ban === filterPB);
   });
-
   const sorted = applySort(filtered, sort);
 
-  const pbGroups = PHONG_BAN.map(p => ({
-    label: p,
-    count: employees.filter(e => e.phong_ban === p && e.trang_thai === 'Đang làm việc').length,
-  }));
+  const pbGroups = PHONG_BAN.map(p => ({ label: p, count: employees.filter(e => e.phong_ban === p && e.trang_thai === 'Đang làm việc').length }));
 
-  function getManagerName(quan_ly_id) {
-    const mgr = employees.find(e => e.id === quan_ly_id);
-    return mgr ? mgr.ho_ten : null;
-  }
+  function getManagerName(quan_ly_id) { return employees.find(e => e.id === quan_ly_id)?.ho_ten || null; }
 
-  // Routing logic: admin/manager → edit; employee → always view (onUpdate is null for employees)
   function handleCardClick(emp) {
-    if (typeof onUpdate === 'function' && !isEmployee) {
-      // Admin / manager: click bất kỳ card nào → edit
-      setEditing(emp);
-    } else {
-      // Employee (onUpdate === null): luôn luôn view, không bao giờ edit
-      setViewing(emp);
-    }
+    if (typeof onUpdate === 'function' && !isEmployee) { setEditing(emp); }
+    else { setViewing(emp); }
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div style={{ padding: '28px', fontFamily: "'Inter', system-ui, sans-serif" }}>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Nhân viên</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{employees.filter(e => e.trang_thai === 'Đang làm việc').length} đang làm việc</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: TEXT1, margin: '0 0 4px' }}>Nhân sự</h1>
+          <p style={{ fontSize: '14px', color: TEXT2, margin: 0 }}>{employees.filter(e => e.trang_thai === 'Đang làm việc').length} đang làm việc</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ position: 'relative' }}>
             <select
               value={sort}
               onChange={e => setSort(e.target.value)}
-              className="appearance-none border border-slate-300 rounded-lg pl-3 pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 cursor-pointer text-slate-700"
+              style={{ ...inputS, width: 'auto', paddingRight: '32px', appearance: 'none', cursor: 'pointer', fontSize: '13px' }}
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: TEXT2, pointerEvents: 'none' }} />
           </div>
           {onAdd && (
-            <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600">
+            <button
+              onClick={() => setShowForm(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', backgroundColor: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
               <Plus size={16} /> Thêm nhân viên
             </button>
           )}
@@ -305,91 +265,101 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
       </div>
 
       {/* Phòng ban chips */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilterPB('')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!filterPB ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}
-        >
-          Tất cả ({employees.filter(e => e.trang_thai === 'Đang làm việc').length})
-        </button>
-        {pbGroups.map(g => (
-          <button
-            key={g.label}
-            onClick={() => setFilterPB(filterPB === g.label ? '' : g.label)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filterPB === g.label ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}
-          >
-            {g.label.replace('Phòng ', '')} ({g.count})
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+        {[{ label: `Tất cả (${employees.filter(e => e.trang_thai === 'Đang làm việc').length})`, value: '' }, ...pbGroups.map(g => ({ label: `${g.label.replace('Phòng ', '')} (${g.count})`, value: g.label }))].map(chip => {
+          const isActive = filterPB === chip.value;
+          return (
+            <button
+              key={chip.value}
+              onClick={() => setFilterPB(filterPB === chip.value && chip.value !== '' ? '' : chip.value)}
+              style={{ padding: '5px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: '500', border: '1px solid', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', backgroundColor: isActive ? PRIMARY : '#fff', color: isActive ? '#fff' : TEXT2, borderColor: isActive ? PRIMARY : BORDER }}
+            >
+              {chip.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div style={{ position: 'relative', marginBottom: '14px' }}>
+        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: TEXT2, pointerEvents: 'none' }} />
         <input
-          className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          style={{ ...inputS, paddingLeft: '38px', paddingRight: search ? '36px' : '12px' }}
           placeholder="Tìm tên, chức vụ, số điện thoại..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: TEXT2, display: 'flex', padding: '2px' }}>
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       {(search || filterPB) && (
-        <p className="text-xs text-slate-500">
+        <p style={{ fontSize: '12px', color: TEXT2, marginBottom: '12px' }}>
           Hiển thị {sorted.length} / {employees.length} nhân viên
-          {filterPB && <span className="ml-1 text-orange-500 font-medium">· {filterPB}</span>}
+          {filterPB && <span style={{ marginLeft: '6px', color: PRIMARY, fontWeight: '500' }}>· {filterPB}</span>}
         </p>
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
         {sorted.map(emp => {
-          const age = calcAge(emp.ngay_sinh);
-          const daysLeft = daysUntilBirthday(emp.ngay_sinh);
+          const age          = calcAge(emp.ngay_sinh);
+          const daysLeft     = daysUntilBirthday(emp.ngay_sinh);
           const birthdaySoon = daysLeft <= 7;
-          const role = roleStyle[emp.vai_tro] || roleStyle['Nhân viên'];
-          const managerName = getManagerName(emp.quan_ly_id);
+          const roleSt       = ROLE_STYLE[emp.vai_tro] || ROLE_STYLE['Nhân viên'];
+          const statusSt     = STATUS_COLORS[emp.trang_thai] || { bg: '#F3F4F6', color: TEXT2 };
+          const managerName  = getManagerName(emp.quan_ly_id);
 
           return (
             <div
               key={emp.id}
-              className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-orange-200 transition-colors group"
-              style={{ cursor: 'pointer' }}
               onClick={() => handleCardClick(emp)}
+              style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '18px', boxShadow: CARD_SHADOW, cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s', position: 'relative' }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; e.currentTarget.style.transform = 'none'; }}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-lg">{emp.ho_ten.charAt(0)}</span>
+              {/* Top row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg,#E8500A,#C2440E)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ color: '#fff', fontWeight: '700', fontSize: '18px' }}>{emp.ho_ten.charAt(0)}</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900 text-sm">{emp.ho_ten}</p>
-                    <p className="text-xs text-slate-500">{emp.chuc_vu}</p>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: TEXT1, margin: '0 0 2px' }}>{emp.ho_ten}</p>
+                    <p style={{ fontSize: '12px', color: TEXT2, margin: 0 }}>{emp.chuc_vu}</p>
                   </div>
                 </div>
-                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
-                  {onDelete && (
-                    <button onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={13} /></button>
-                  )}
-                </div>
+                {onDelete && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT2, padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = TEXT2; }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${role.cls}`}>
-                  <Shield size={9} className="inline mr-0.5 -mt-0.5" />{role.label}
+              {/* Badges */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: roleSt.bg, color: roleSt.color }}>
+                  <Shield size={9} />{emp.vai_tro || 'Nhân viên'}
                 </span>
-                <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">
+                <span style={{ padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: '#F3F4F6', color: TEXT2 }}>
                   {emp.phong_ban?.replace('Phòng ', '')}
                 </span>
-                <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${statusColors[emp.trang_thai] || 'bg-slate-100 text-slate-600'}`}>
+                <span style={{ padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: statusSt.bg, color: statusSt.color }}>
                   {emp.trang_thai}
                 </span>
               </div>
 
-              {/* Account status badge */}
+              {/* Account status */}
               {(() => {
-                const acct = emp.accountStatus === 'active' ? ACCT_STATUS.active : ACCT_STATUS.pending;
+                const acct      = emp.accountStatus === 'active' ? ACCT_STATUS.active : ACCT_STATUS.pending;
                 const isPending = emp.accountStatus !== 'active';
                 return (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
@@ -399,45 +369,47 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
                     {isPending && emp.dien_thoai && (
                       <button
                         onClick={e => { e.stopPropagation(); setActivationModal(emp); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: 'transparent', color: '#F15A22', border: '1px solid #FDDCCA', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FFF5F0'; }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: 'transparent', color: PRIMARY, border: '1px solid #FDDCCA', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FFF3EE'; }}
                         onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
-                        <UserPlus size={10} /> Hướng dẫn kích hoạt
+                        <UserPlus size={10} /> Kích hoạt
                       </button>
                     )}
                   </div>
                 );
               })()}
 
-              <div className="space-y-1.5 border-t border-slate-100 pt-3">
+              {/* Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: `1px solid ${BORDER}`, paddingTop: '10px' }}>
                 {managerName && (
-                  <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Users size={12} className="text-slate-400" />Quản lý: <span className="font-medium text-slate-700">{managerName}</span>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, margin: 0 }}>
+                    <Users size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+                    Quản lý: <span style={{ fontWeight: '500', color: TEXT1 }}>{managerName}</span>
                   </p>
                 )}
                 {emp.dien_thoai && (
-                  <a href={`tel:${emp.dien_thoai}`} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-600">
-                    <Phone size={12} className="text-slate-400" />{emp.dien_thoai}
+                  <a href={`tel:${emp.dien_thoai}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, textDecoration: 'none' }}>
+                    <Phone size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.dien_thoai}
                   </a>
                 )}
                 {emp.email && (
-                  <a href={`mailto:${emp.email}`} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-orange-600 truncate">
-                    <Mail size={12} className="text-slate-400" />{emp.email}
+                  <a href={`mailto:${emp.email}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Mail size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.email}
                   </a>
                 )}
                 {emp.ngay_sinh && (
-                  <p className={`flex items-center gap-1.5 text-xs ${birthdaySoon ? 'text-orange-600 font-medium' : 'text-slate-500'}`}>
-                    <Cake size={12} className={birthdaySoon ? 'text-orange-500' : 'text-orange-400'} />
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: birthdaySoon ? PRIMARY : TEXT2, fontWeight: birthdaySoon ? '500' : '400', margin: 0 }}>
+                    <Cake size={12} style={{ color: birthdaySoon ? PRIMARY : '#9CA3AF', flexShrink: 0 }} />
                     {age !== null ? `${age} tuổi` : ''}
-                    <span className="text-slate-400">· {emp.ngay_sinh.slice(5).replace('-', '/')}</span>
-                    {birthdaySoon && daysLeft === 0 && <span className="ml-1 text-orange-500">🎂 Hôm nay!</span>}
-                    {birthdaySoon && daysLeft > 0 && <span className="ml-1 text-orange-400">({daysLeft} ngày nữa)</span>}
+                    <span style={{ color: '#9CA3AF' }}>· {emp.ngay_sinh.slice(5).replace('-', '/')}</span>
+                    {birthdaySoon && daysLeft === 0 && <span style={{ color: PRIMARY }}>🎂 Hôm nay!</span>}
+                    {birthdaySoon && daysLeft > 0 && <span style={{ color: PRIMARY }}>({daysLeft} ngày nữa)</span>}
                   </p>
                 )}
                 {emp.ngay_vao_lam && (
-                  <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Calendar size={12} className="text-slate-400" />Vào làm: {emp.ngay_vao_lam}
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, margin: 0 }}>
+                    <Calendar size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />Vào làm: {emp.ngay_vao_lam}
                   </p>
                 )}
               </div>
@@ -447,12 +419,13 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
       </div>
 
       {sorted.length === 0 && (
-        <div className="text-center py-16 text-slate-500">
-          <UserCheck size={40} className="mx-auto mb-3 text-slate-300" />
-          <p className="font-medium">Không tìm thấy nhân viên</p>
+        <div style={{ textAlign: 'center', padding: '64px 0', color: TEXT2 }}>
+          <UserCheck size={40} style={{ margin: '0 auto 12px', color: BORDER, display: 'block' }} />
+          <p style={{ fontWeight: '500', margin: 0 }}>Không tìm thấy nhân viên</p>
         </div>
       )}
 
+      {/* Modals */}
       {showForm && (
         <Modal title="Thêm nhân viên" onClose={() => setShowForm(false)} size="md">
           <EmployeeForm employees={employees} onSubmit={d => { onAdd({ ...d, accountStatus: 'pending', uid: null }); setShowForm(false); }} onCancel={() => setShowForm(false)} />
@@ -463,66 +436,52 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
           <EmployeeForm initial={editing} employees={employees} onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}
-
-      {/* ViewEmployeeModal — chỉ xem, không chỉnh sửa */}
       {viewing && (
         <ViewEmployeeModal emp={viewing} employees={employees} onClose={() => setViewing(null)} />
       )}
+
       {onDelete && confirmDelete && (
         <Modal title="Xác nhận xóa" onClose={() => setConfirmDelete(null)} size="sm">
-          <p className="text-slate-600 mb-6">Bạn có chắc muốn xóa nhân viên này?</p>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50">Hủy</button>
-            <button onClick={() => { onDelete(confirmDelete); setConfirmDelete(null); }} className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600">Xóa</button>
+          <p style={{ color: TEXT2, marginBottom: '24px', fontSize: '14px' }}>Bạn có chắc muốn xóa nhân viên này?</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button onClick={() => setConfirmDelete(null)} style={{ padding: '8px 18px', fontSize: '14px', border: `1px solid ${BORDER}`, borderRadius: '8px', backgroundColor: '#fff', color: TEXT1, cursor: 'pointer', fontFamily: 'inherit' }}>Hủy</button>
+            <button onClick={() => { onDelete(confirmDelete); setConfirmDelete(null); }} style={{ padding: '8px 18px', fontSize: '14px', fontWeight: '600', backgroundColor: '#EF4444', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit' }}>Xóa</button>
           </div>
         </Modal>
       )}
 
-      {/* Activation instructions modal */}
       {activationModal && (
         <Modal title="Hướng dẫn kích hoạt tài khoản" onClose={() => setActivationModal(null)} size="sm">
           <div style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FFF5F0', borderRadius: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '44px', height: '44px', backgroundColor: '#F15A22', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#FFF3EE', borderRadius: '10px', marginBottom: '20px' }}>
+              <div style={{ width: '44px', height: '44px', backgroundColor: PRIMARY, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <span style={{ color: '#fff', fontWeight: '700', fontSize: '18px' }}>{activationModal.ho_ten?.charAt(0)}</span>
               </div>
               <div>
-                <p style={{ margin: 0, fontWeight: '700', fontSize: '15px', color: '#1A1A1A' }}>{activationModal.ho_ten}</p>
-                <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>{activationModal.chuc_vu} · {activationModal.phong_ban}</p>
+                <p style={{ margin: '0 0 2px', fontWeight: '700', fontSize: '15px', color: TEXT1 }}>{activationModal.ho_ten}</p>
+                <p style={{ margin: 0, fontSize: '13px', color: TEXT2 }}>{activationModal.chuc_vu} · {activationModal.phong_ban}</p>
               </div>
             </div>
-
-            <p style={{ fontSize: '14px', color: '#414042', marginBottom: '16px', lineHeight: '1.6' }}>
+            <p style={{ fontSize: '14px', color: TEXT1, marginBottom: '16px', lineHeight: '1.6' }}>
               Yêu cầu nhân viên thực hiện các bước sau để kích hoạt tài khoản:
             </p>
-
             {[
               { num: '1', text: 'Mở trình duyệt và truy cập hệ thống KNP CRM' },
               { num: '2', text: <>Chọn tab <strong>"Số điện thoại"</strong> trên màn hình đăng nhập</> },
-              { num: '3', text: <>Nhập SĐT: <strong style={{ color: '#F15A22' }}>{activationModal.dien_thoai}</strong></> },
-              {
-                num: '4',
-                text: <>Nhập mã PIN mặc định: <strong style={{ color: '#F15A22', fontSize: '16px', letterSpacing: '2px' }}>
-                  {activationModal.dien_thoai ? activationModal.dien_thoai.replace(/\D/g, '').slice(-6) : '______'}
-                </strong> (6 số cuối SĐT)</>,
-              },
+              { num: '3', text: <>Nhập SĐT: <strong style={{ color: PRIMARY }}>{activationModal.dien_thoai}</strong></> },
+              { num: '4', text: <>Nhập mã PIN mặc định: <strong style={{ color: PRIMARY, fontSize: '16px', letterSpacing: '2px' }}>{activationModal.dien_thoai ? activationModal.dien_thoai.replace(/\D/g, '').slice(-6) : '______'}</strong> (6 số cuối SĐT)</> },
               { num: '5', text: 'Nhấn "Đăng nhập" — hệ thống tự kích hoạt tài khoản' },
             ].map(step => (
               <div key={step.num} style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start' }}>
-                <span style={{ width: '24px', height: '24px', backgroundColor: '#F15A22', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0, marginTop: '1px' }}>{step.num}</span>
-                <p style={{ margin: 0, fontSize: '14px', color: '#414042', lineHeight: '1.6' }}>{step.text}</p>
+                <span style={{ width: '24px', height: '24px', backgroundColor: PRIMARY, color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', flexShrink: 0, marginTop: '1px' }}>{step.num}</span>
+                <p style={{ margin: 0, fontSize: '14px', color: TEXT1, lineHeight: '1.6' }}>{step.text}</p>
               </div>
             ))}
-
             <div style={{ backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '10px 12px', marginTop: '16px', fontSize: '12px', color: '#92400E', lineHeight: '1.5' }}>
               🔒 Không cần SMS hay OTP — hệ thống xác thực bằng PIN nội bộ. Nhân viên có thể đổi PIN sau khi đăng nhập.
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <button
-                onClick={() => setActivationModal(null)}
-                style={{ padding: '8px 20px', backgroundColor: '#F15A22', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}
-              >
+              <button onClick={() => setActivationModal(null)} style={{ padding: '8px 20px', backgroundColor: PRIMARY, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Đã hiểu
               </button>
             </div>

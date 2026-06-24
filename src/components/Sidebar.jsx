@@ -1,28 +1,26 @@
-import { BarChart3, Building2, Users, UserCheck, ClipboardList, FileText, Wallet, TrendingUp } from 'lucide-react';
+import { BarChart3, Building2, UserCheck, ClipboardList, FileText, Wallet, TrendingUp } from 'lucide-react';
 
-const navGroups = [
+const NAV_GROUPS = [
   {
     label: 'TỔNG QUAN',
     items: [{ id: 'dashboard', label: 'Tổng quan', icon: BarChart3 }],
   },
   {
     label: 'QUAN HỆ KHÁCH HÀNG',
-    items: [
-      { id: 'customers', label: 'Khách hàng', icon: Building2 },
-    ],
+    items: [{ id: 'customers', label: 'Khách hàng', icon: Building2 }],
   },
   {
     label: 'VẬN HÀNH',
     items: [
-      { id: 'employees', label: 'Nhân sự', icon: UserCheck },
-      { id: 'tasks', label: 'Giao việc', icon: ClipboardList },
+      { id: 'employees', label: 'Nhân sự',  icon: UserCheck },
+      { id: 'tasks',     label: 'Giao việc', icon: ClipboardList },
     ],
   },
   {
     label: 'KINH DOANH',
     items: [
       { id: 'quotes', label: 'Báo giá', icon: FileText },
-      { id: 'debts', label: 'Công nợ', icon: Wallet },
+      { id: 'debts',  label: 'Công nợ', icon: Wallet },
     ],
   },
   {
@@ -31,72 +29,86 @@ const navGroups = [
   },
 ];
 
-export default function Sidebar({ activeTab, onTabChange, role = 'admin' }) {
-  const visibleGroups = navGroups;
+export default function Sidebar({ activeTab, onTabChange }) {
   return (
-    <div
-      className="w-56 min-h-screen flex flex-col flex-shrink-0 border-r"
-      style={{ backgroundColor: '#F8F8F8', borderColor: '#E8E8E8' }}
-    >
+    <div style={{
+      width: '220px',
+      minHeight: '100vh',
+      backgroundColor: '#1A1D23',
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+    }}>
       {/* Logo */}
-      <div
-        className="px-4 py-5 border-b flex flex-col items-center"
-        style={{ borderColor: '#E8E8E8' }}
-      >
-        <img src="/logo.png" alt="Kim Ngân Phát" style={{ height: '48px', width: 'auto' }} />
-        <span className="text-xs mt-2 tracking-wide" style={{ color: '#999999' }}>
+      <div style={{
+        padding: '20px',
+        borderBottom: '1px solid #2D3139',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}>
+        <img src="/logo.png" alt="Kim Ngân Phát" style={{ height: '44px', width: 'auto' }} />
+        <span style={{ fontSize: '11px', color: '#6B7280', marginTop: '8px', letterSpacing: '0.06em' }}>
           Quản lý CRM
         </span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-4 overflow-y-auto">
-        {visibleGroups.map(group => (
-          <div key={group.label}>
-            <p
-              className="text-xs font-semibold tracking-wider px-2 mb-1"
-              style={{ color: '#999999' }}
-            >
+      <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+        {NAV_GROUPS.map(group => (
+          <div key={group.label} style={{ marginBottom: '2px' }}>
+            <p style={{
+              fontSize: '11px', fontWeight: '600', color: '#6B7280',
+              padding: '14px 16px 6px', letterSpacing: '0.08em',
+              textTransform: 'uppercase', margin: 0,
+            }}>
               {group.label}
             </p>
-            <div className="space-y-0.5">
-              {group.items.map(({ id, label, icon: Icon }) => {
-                const isActive = activeTab === id;
-                return (
-                  <button
-                    key={id}
-                    onClick={() => onTabChange(id)}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={
-                      isActive
-                        ? { backgroundColor: '#F15A22', color: '#ffffff' }
-                        : { color: '#414042' }
-                    }
-                    onMouseEnter={e => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'rgba(241,90,34,0.08)';
-                        e.currentTarget.style.color = '#F15A22';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = '';
-                        e.currentTarget.style.color = '#414042';
-                      }
-                    }}
-                  >
-                    <Icon size={16} />
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            {group.items.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => onTabChange(id)}
+                  style={{
+                    width: 'calc(100% - 16px)',
+                    margin: '1px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: isActive ? '600' : '400',
+                    color: isActive ? '#FFFFFF' : '#A0A8B8',
+                    backgroundColor: isActive ? '#E8500A' : 'transparent',
+                    textAlign: 'left',
+                    transition: 'background-color 0.15s, color 0.15s',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = '#2D3139';
+                    if (!isActive) e.currentTarget.style.color = '#FFFFFF';
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                    if (!isActive) e.currentTarget.style.color = '#A0A8B8';
+                  }}
+                >
+                  <Icon size={18} style={{ flexShrink: 0 }} />
+                  {label}
+                </button>
+              );
+            })}
           </div>
         ))}
       </nav>
 
-      <div className="px-3 py-3 border-t" style={{ borderColor: '#E8E8E8' }}>
-        <div className="text-xs text-center" style={{ color: '#CCCCCC' }}>v1.0.0</div>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid #2D3139' }}>
+        <p style={{ fontSize: '11px', color: '#4B5563', textAlign: 'center', margin: 0 }}>v1.0.0</p>
       </div>
     </div>
   );

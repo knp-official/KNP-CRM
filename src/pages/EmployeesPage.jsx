@@ -4,11 +4,11 @@ import Modal from '../components/Modal';
 import { PHONG_BAN, TRANG_THAI_NV, VAI_TRO_NV } from '../data/sampleData';
 
 /* ── Design tokens ────────────────────────────────────────────────────── */
-const PRIMARY   = '#E8500A';
-const TEXT1     = '#1A1D23';
+const PRIMARY   = '#F15A22';
+const TEXT1     = '#111827';
 const TEXT2     = '#6B7280';
-const BORDER    = '#E8ECF0';
-const CARD_SHADOW = '0 1px 3px rgba(0,0,0,0.08)';
+const BORDER    = '#e5e7eb';
+const CARD_SHADOW = '0 1px 2px rgba(0,0,0,0.06), 0 0 0 0.5px #e5e7eb';
 
 const ACCT_STATUS = {
   active:  { bg: '#ECFDF5', color: '#065F46', border: '#A7F3D0', label: 'Đang hoạt động', icon: '●' },
@@ -16,15 +16,22 @@ const ACCT_STATUS = {
 };
 
 const STATUS_COLORS = {
-  'Đang làm việc': { bg: '#ECFDF5', color: '#059669' },
+  'Đang làm việc': { bg: '#EAF3DE', color: '#27500A' },
   'Nghỉ phép':     { bg: '#FFFBEB', color: '#B45309' },
   'Đã nghỉ việc':  { bg: '#F3F4F6', color: '#6B7280' },
 };
 
+/* Avatar background theo vai_tro (field string trong Firestore) */
+const AVATAR_BG = {
+  'Admin':     '#534AB7',
+  'Quản lý':   '#1D9E75',
+  'Nhân viên': '#F15A22',
+};
+
 const ROLE_STYLE = {
-  'Admin':     { bg: '#FEE2E2', color: '#B91C1C' },
-  'Quản lý':   { bg: '#FFEDD5', color: '#C2410C' },
-  'Nhân viên': { bg: '#F3F4F6', color: '#374151' },
+  'Admin':     { bg: '#EEEDFE', color: '#3C3489' },
+  'Quản lý':   { bg: '#E1F5EE', color: '#085041' },
+  'Nhân viên': { bg: '#F1EFE8', color: '#444441' },
 };
 
 const SORT_OPTIONS = [
@@ -207,7 +214,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false
 }
 
 /* ── Main page ──────────────────────────────────────────────────────── */
-export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee }) {
+export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee, onNavigate }) {
   const [search, setSearch]         = useState('');
   const [filterPB, setFilterPB]     = useState('');
   const [sort, setSort]             = useState('ten_az');
@@ -312,106 +319,106 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
           const roleSt       = ROLE_STYLE[emp.vai_tro] || ROLE_STYLE['Nhân viên'];
           const statusSt     = STATUS_COLORS[emp.trang_thai] || { bg: '#F3F4F6', color: TEXT2 };
           const managerName  = getManagerName(emp.quan_ly_id);
+          const avatarBg     = AVATAR_BG[emp.vai_tro] || '#F15A22';
 
           return (
             <div
               key={emp.id}
               onClick={() => handleCardClick(emp)}
-              style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '18px', boxShadow: CARD_SHADOW, cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s', position: 'relative' }}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; e.currentTarget.style.transform = 'none'; }}
+              style={{ backgroundColor: '#fff', borderRadius: '12px', boxShadow: CARD_SHADOW, cursor: 'pointer', overflow: 'hidden' }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.10), 0 0 0 0.5px #d1d5db'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = CARD_SHADOW; }}
             >
-              {/* Top row */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg,#E8500A,#C2440E)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ color: '#fff', fontWeight: '700', fontSize: '18px' }}>{emp.ho_ten.charAt(0)}</span>
+              {/* Card body */}
+              <div style={{ padding: '16px 16px 12px' }}>
+                {/* Header: avatar + name + delete */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '40px', height: '40px', backgroundColor: avatarBg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ color: '#fff', fontWeight: '700', fontSize: '16px' }}>{emp.ho_ten.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '13px', fontWeight: '500', color: TEXT1, margin: '0 0 2px' }}>{emp.ho_ten}</p>
+                      <p style={{ fontSize: '11px', color: TEXT2, margin: 0 }}>{emp.chuc_vu}{emp.phong_ban ? ` · ${emp.phong_ban.replace('Phòng ', '')}` : ''}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: '14px', fontWeight: '600', color: TEXT1, margin: '0 0 2px' }}>{emp.ho_ten}</p>
-                    <p style={{ fontSize: '12px', color: TEXT2, margin: 0 }}>{emp.chuc_vu}</p>
-                  </div>
+                  {onDelete && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#D1D5DB', padding: '3px', borderRadius: '5px', display: 'flex', transition: 'all 0.12s', flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#D1D5DB'; }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
-                {onDelete && (
-                  <button
-                    onClick={e => { e.stopPropagation(); setConfirmDelete(emp.id); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT2, padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = TEXT2; }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
+
+                {/* Badges — role + dept + status (tối đa 3) */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '10px' }}>
+                  <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: roleSt.bg, color: roleSt.color }}>
+                    {emp.vai_tro || 'Nhân viên'}
+                  </span>
+                  <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: '#E6F1FB', color: '#0C447C' }}>
+                    {emp.phong_ban?.replace('Phòng ', '') || '—'}
+                  </span>
+                  <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: statusSt.bg, color: statusSt.color }}>
+                    {emp.trang_thai}
+                  </span>
+                </div>
+
+                {/* Info rows */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {(managerName || emp.dien_thoai) && (
+                    managerName ? (
+                      <p style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: TEXT2, margin: 0 }}>
+                        <Users size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />
+                        <span style={{ color: TEXT1, fontWeight: '500' }}>{managerName}</span>
+                      </p>
+                    ) : (
+                      <a href={`tel:${emp.dien_thoai}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: TEXT2, textDecoration: 'none' }}>
+                        <Phone size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.dien_thoai}
+                      </a>
+                    )
+                  )}
+                  {emp.email && (
+                    <a href={`mailto:${emp.email}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: TEXT2, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Mail size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.email}
+                    </a>
+                  )}
+                  {emp.ngay_vao_lam && (
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: TEXT2, margin: 0 }}>
+                      <Calendar size={11} style={{ color: '#9CA3AF', flexShrink: 0 }} />Vào làm: {emp.ngay_vao_lam}
+                    </p>
+                  )}
+                  {birthdaySoon && emp.ngay_sinh && (
+                    <p style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: PRIMARY, fontWeight: '500', margin: 0 }}>
+                      <Cake size={11} style={{ flexShrink: 0 }} />
+                      {daysLeft === 0 ? '🎂 Sinh nhật hôm nay!' : `Sinh nhật sau ${daysLeft} ngày`}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Badges */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '10px' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: roleSt.bg, color: roleSt.color }}>
-                  <Shield size={9} />{emp.vai_tro || 'Nhân viên'}
-                </span>
-                <span style={{ padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: '#F3F4F6', color: TEXT2 }}>
-                  {emp.phong_ban?.replace('Phòng ', '')}
-                </span>
-                <span style={{ padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: statusSt.bg, color: statusSt.color }}>
-                  {emp.trang_thai}
-                </span>
-              </div>
-
-              {/* Account status */}
-              {(() => {
-                const acct      = emp.accountStatus === 'active' ? ACCT_STATUS.active : ACCT_STATUS.pending;
-                const isPending = emp.accountStatus !== 'active';
-                return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '600', backgroundColor: acct.bg, color: acct.color, border: `1px solid ${acct.border}` }}>
-                      <span style={{ fontSize: '8px' }}>{acct.icon}</span>{acct.label}
-                    </span>
-                    {isPending && emp.dien_thoai && (
-                      <button
-                        onClick={e => { e.stopPropagation(); setActivationModal(emp); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '999px', fontSize: '11px', fontWeight: '500', backgroundColor: 'transparent', color: PRIMARY, border: '1px solid #FDDCCA', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FFF3EE'; }}
-                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                      >
-                        <UserPlus size={10} /> Kích hoạt
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Details */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: `1px solid ${BORDER}`, paddingTop: '10px' }}>
-                {managerName && (
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, margin: 0 }}>
-                    <Users size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                    Quản lý: <span style={{ fontWeight: '500', color: TEXT1 }}>{managerName}</span>
-                  </p>
-                )}
-                {emp.dien_thoai && (
-                  <a href={`tel:${emp.dien_thoai}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, textDecoration: 'none' }}>
-                    <Phone size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.dien_thoai}
-                  </a>
-                )}
-                {emp.email && (
-                  <a href={`mailto:${emp.email}`} onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <Mail size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />{emp.email}
-                  </a>
-                )}
-                {emp.ngay_sinh && (
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: birthdaySoon ? PRIMARY : TEXT2, fontWeight: birthdaySoon ? '500' : '400', margin: 0 }}>
-                    <Cake size={12} style={{ color: birthdaySoon ? PRIMARY : '#9CA3AF', flexShrink: 0 }} />
-                    {age !== null ? `${age} tuổi` : ''}
-                    <span style={{ color: '#9CA3AF' }}>· {emp.ngay_sinh.slice(5).replace('-', '/')}</span>
-                    {birthdaySoon && daysLeft === 0 && <span style={{ color: PRIMARY }}>🎂 Hôm nay!</span>}
-                    {birthdaySoon && daysLeft > 0 && <span style={{ color: PRIMARY }}>({daysLeft} ngày nữa)</span>}
-                  </p>
-                )}
-                {emp.ngay_vao_lam && (
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: TEXT2, margin: 0 }}>
-                    <Calendar size={12} style={{ color: '#9CA3AF', flexShrink: 0 }} />Vào làm: {emp.ngay_vao_lam}
-                  </p>
-                )}
+              {/* Card footer — 2 action buttons */}
+              <div style={{ display: 'flex', borderTop: `0.5px solid ${BORDER}` }}>
+                <button
+                  onClick={e => { e.stopPropagation(); handleCardClick(emp); }}
+                  style={{ flex: 1, padding: '9px', fontSize: '12px', fontWeight: '500', color: PRIMARY, backgroundColor: '#FEF2EC', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 0.12s' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FDE8DC'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FEF2EC'; }}
+                >
+                  Xem hồ sơ
+                </button>
+                <div style={{ width: '0.5px', backgroundColor: BORDER }} />
+                <button
+                  onClick={e => { e.stopPropagation(); onNavigate?.('tasks'); }}
+                  style={{ flex: 1, padding: '9px', fontSize: '12px', fontWeight: '500', color: TEXT2, backgroundColor: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 0.12s' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                >
+                  Giao việc
+                </button>
               </div>
             </div>
           );

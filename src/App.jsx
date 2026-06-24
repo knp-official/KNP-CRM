@@ -260,7 +260,7 @@ function AppContent() {
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; }
       `}</style>
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
-      <Sidebar activeTab={tab} onTabChange={setActiveTab} role={role} />
+      <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
         <Header
           userDoc={userDoc}
@@ -297,6 +297,7 @@ function AppContent() {
               onDelete={g(deleteEmployee, p.employees.del)}
               myEmployeeId={myEmployeeId}
               isEmployee={isEmployee}
+              onNavigate={setActiveTab}
             />
           )}
           {tab === 'tasks' && (

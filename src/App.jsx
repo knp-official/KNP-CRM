@@ -4,7 +4,8 @@ import ViewModeBar from './components/ViewModeBar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
 import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
-import { createTaskNotification, sendZaloNotification } from './services/notificationService';
+import { createTaskNotification, sendZaloNotification, sendTaskNotification } from './services/notificationService';
+import { requestNotificationPermission, onForegroundMessage } from './services/fcmService';
 import LoginPage from './pages/LoginPage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -86,7 +87,25 @@ function AppContent() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // View mode switcher (Admin only)
+  // BƯỚC 4: Xin quyền push notification sau khi login
+  useEffect(() => {
+    if (user?.uid) {
+      requestNotificationPermission(user.uid);
+    }
+  }, [user?.uid]);
+
+  // BƯỚC 6: Lắng nghe thông báo khi app đang mở (foreground)
+  useEffect(() => {
+    const unsub = onForegroundMessage((payload) => {
+      const { title, body } = payload.notification || {};
+      if (Notification.permission === 'granted') {
+        new Notification(title || 'KNP CRM', { body: body || '', icon: '/logo192.png' });
+      }
+    });
+    return unsub;
+  }, []);
+
+  // View mode switcher (tất cả user)
   const [viewMode, setViewMode] = useState('desktop');
   const simulatedWidth = viewMode === 'mobile' ? 375 : viewMode === 'tablet' ? 768 : null;
 
@@ -212,6 +231,20 @@ function AppContent() {
   function handleAddTask(data) {
     const rec = addTask({ ...data, created_by_uid: userDoc?.uid });
     notifyAssignee(rec, 'new_task');
+
+    // FCM push notification đến nhân viên được giao việc
+    if (rec?.nhan_vien_id) {
+      const emp = employees.find(e => e.id === rec.nhan_vien_id);
+      if (emp?.uid) {
+        sendTaskNotification({
+          taskId: rec.id,
+          taskTitle: rec.tieu_de || data.tieu_de || '',
+          assigneeId: emp.uid,
+          assigneeName: emp.ho_ten || '',
+          assignedByName: userDoc?.hoTen || 'Quản lý',
+        });
+      }
+    }
     return rec;
   }
 
@@ -380,8 +413,8 @@ function AppContent() {
         {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
       </div>
 
-      {/* ViewModeBar: chỉ Admin, luôn fixed so không bị ảnh hưởng bởi wrapper */}
-      {isAdmin && <ViewModeBar mode={viewMode} onChange={setViewMode} />}
+      {/* ViewModeBar: mọi user, luôn fixed so không bị ảnh hưởng bởi wrapper */}
+      <ViewModeBar mode={viewMode} onChange={setViewMode} />
     </>
   );
 }

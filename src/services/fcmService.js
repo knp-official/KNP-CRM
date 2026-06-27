@@ -1,80 +1,83 @@
-import { getToken } from 'firebase/messaging';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { messaging, db } from '../firebase';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 
-// ─── Setup hướng dẫn ────────────────────────────────────────────────────────
-//
-// Bước 1 — Lấy VAPID key:
-//   Firebase Console → Project Settings → Cloud Messaging
-//   → Web Push certificates → Generate key pair
-//   → Copy "Key pair" → dán vào VITE_FCM_VAPID_KEY trong .env.local
-//
-// Bước 2 — Lấy Server Key:
-//   Firebase Console → Project Settings → Cloud Messaging
-//   → Cloud Messaging API (Legacy) → Enable → Copy Server Key
-//   → dán vào VITE_FCM_SERVER_KEY trong .env.local
-//
-// File .env.local (KHÔNG commit file này):
-//   VITE_FCM_VAPID_KEY=BxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxA
-//   VITE_FCM_SERVER_KEY=AAAAxxxxxx:APA91bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-//
-// Vercel: thêm 2 biến này vào Project Settings → Environment Variables
-//
-// LƯU Ý: VITE_ prefix nghĩa là key được bundle vào client JS.
-// Đây là chấp nhận được cho internal CRM. Nếu cần bảo mật cao hơn,
-// chuyển sendFCMPush sang Vercel API Route (/api/send-fcm.js).
-// ────────────────────────────────────────────────────────────────────────────
+const VAPID_KEY    = import.meta.env.VITE_VAPID_KEY    || import.meta.env.VITE_FCM_VAPID_KEY  || '';
+const SERVER_KEY   = import.meta.env.VITE_FCM_SERVER_KEY || '';
 
-const VAPID_KEY  = import.meta.env.VITE_FCM_VAPID_KEY  || '';
-const SERVER_KEY = import.meta.env.VITE_FCM_SERVER_KEY || '';
-
-// Xin quyền + lấy token + lưu vào Firestore users/{uid}
-export async function initFCMForUser(uid) {
-  if (!uid) return;
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-  if (!messaging) {
-    console.warn('[FCM] messaging chưa được khởi tạo');
-    return;
-  }
+// Xin quyền, lấy FCM token, lưu vào Firestore fcm_tokens/{userId} và users/{userId}
+export async function requestNotificationPermission(userId) {
+  if (!userId) return null;
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return null;
   if (!VAPID_KEY) {
-    console.warn('[FCM] VITE_FCM_VAPID_KEY chưa được cấu hình trong .env.local');
-    return;
+    console.warn('[FCM] Chưa có VITE_VAPID_KEY trong .env.local');
+    return null;
   }
 
   try {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       console.info('[FCM] Người dùng từ chối quyền thông báo');
-      return;
+      return null;
     }
 
-    const swReg  = await navigator.serviceWorker.ready;
-    const token  = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    const swReg   = await navigator.serviceWorker.ready;
+    const msg     = getMessaging();
+    const token   = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
 
     if (token) {
-      await updateDoc(doc(db, 'users', uid), { fcmToken: token });
-      console.log('[FCM] Token đã lưu cho uid:', uid);
+      // Lưu vào fcm_tokens/{userId} (collection riêng, dễ query)
+      await setDoc(doc(db, 'fcm_tokens', userId), {
+        token,
+        userId,
+        updatedAt: serverTimestamp(),
+        userAgent: navigator.userAgent,
+      });
+      // Cập nhật thêm vào users/{userId} để tương thích code cũ
+      try {
+        await updateDoc(doc(db, 'users', userId), { fcmToken: token });
+      } catch (_) {}
+      console.log('[FCM] Token đã lưu cho uid:', userId);
     }
+    return token;
   } catch (e) {
-    console.warn('[FCM] initFCMForUser lỗi (không ảnh hưởng app):', e.message);
+    console.warn('[FCM] requestNotificationPermission lỗi (không ảnh hưởng app):', e.message);
+    return null;
   }
 }
 
-// Gửi push notification đến một user theo uid
-// Đọc fcmToken từ Firestore, gọi FCM Legacy HTTP API
+// Lắng nghe thông báo khi app đang mở (foreground)
+export function onForegroundMessage(callback) {
+  try {
+    const msg = getMessaging();
+    return onMessage(msg, callback);
+  } catch (e) {
+    console.warn('[FCM] onForegroundMessage không khả dụng:', e.message);
+    return () => {};
+  }
+}
+
+// Gửi push notification đến một user theo uid (dùng FCM Legacy HTTP API với Server Key)
 export async function sendFCMToUser(targetUid, { title, body, data = {} }) {
   if (!SERVER_KEY) {
-    console.warn('[FCM] VITE_FCM_SERVER_KEY chưa được cấu hình — push bị bỏ qua');
+    console.warn('[FCM] VITE_FCM_SERVER_KEY chưa cấu hình — push bị bỏ qua');
     return;
   }
   if (!targetUid) return;
 
   try {
-    const userSnap = await getDoc(doc(db, 'users', targetUid));
-    const fcmToken = userSnap.data()?.fcmToken;
+    // Ưu tiên đọc từ fcm_tokens, fallback sang users
+    let fcmToken = null;
+    const tokenSnap = await getDoc(doc(db, 'fcm_tokens', targetUid));
+    if (tokenSnap.exists()) {
+      fcmToken = tokenSnap.data()?.token;
+    } else {
+      const userSnap = await getDoc(doc(db, 'users', targetUid));
+      fcmToken = userSnap.data()?.fcmToken;
+    }
 
     if (!fcmToken) {
-      console.info('[FCM] User', targetUid, 'chưa có FCM token (chưa bật thông báo)');
+      console.info('[FCM] User', targetUid, 'chưa có FCM token');
       return;
     }
 
@@ -86,12 +89,7 @@ export async function sendFCMToUser(targetUid, { title, body, data = {} }) {
       },
       body: JSON.stringify({
         to: fcmToken,
-        notification: {
-          title,
-          body,
-          icon:         '/logo.png',
-          click_action: 'https://knp-crm.vercel.app',
-        },
+        notification: { title, body, icon: '/logo192.png', click_action: 'https://knp-crm.vercel.app' },
         data,
         priority: 'high',
       }),
@@ -100,9 +98,10 @@ export async function sendFCMToUser(targetUid, { title, body, data = {} }) {
     const result = await res.json();
     if (result.failure > 0) {
       console.warn('[FCM] Push thất bại:', result.results);
-      // Token không hợp lệ → xoá khỏi Firestore để không gửi lại
       if (result.results?.[0]?.error === 'NotRegistered') {
-        await updateDoc(doc(db, 'users', targetUid), { fcmToken: null });
+        // Token hết hạn → xóa
+        await setDoc(doc(db, 'fcm_tokens', targetUid), { token: null, userId: targetUid, updatedAt: serverTimestamp() });
+        try { await updateDoc(doc(db, 'users', targetUid), { fcmToken: null }); } catch (_) {}
       }
     } else {
       console.log('[FCM] Push thành công đến uid:', targetUid);
@@ -111,3 +110,6 @@ export async function sendFCMToUser(targetUid, { title, body, data = {} }) {
     console.warn('[FCM] sendFCMToUser lỗi (không ảnh hưởng app):', e.message);
   }
 }
+
+// Alias cũ — giữ để tương thích
+export const initFCMForUser = requestNotificationPermission;

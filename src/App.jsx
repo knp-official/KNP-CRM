@@ -75,6 +75,17 @@ function AppContent() {
   const { user, userDoc, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  // Detect window width — TRƯỚC mọi conditional return (Rules of Hooks)
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
+  useEffect(() => {
+    const handler = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  const isMobile = windowWidth < 768;
+
   // ── ALL hooks must be called unconditionally (Rules of Hooks) ──
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { contacts, addContact, updateContact, deleteContact }     = useContacts();
@@ -253,31 +264,12 @@ function AppContent() {
     return addCustomer(isEmployee ? { ...data, managedBy: currentUserUid } : data);
   }
 
-  // Detect tablet breakpoint để collapse sidebar (768–1024px)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    typeof window !== 'undefined' && window.innerWidth > 767 && window.innerWidth <= 1024
-  );
-
-  useEffect(() => {
-    function onResize() {
-      const w = window.innerWidth;
-      setSidebarCollapsed(w > 767 && w <= 1024);
-    }
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
   return (
     <>
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
-        <div className="knp-sidebar-wrap">
-          <Sidebar
-            activeTab={tab}
-            onTabChange={setActiveTab}
-            userDoc={userDoc}
-            collapsed={sidebarCollapsed}
-          />
-        </div>
+        {/* Sidebar tự quản lý responsive bên trong — return null khi mobile */}
+        <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
+
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
           <Header
             userDoc={userDoc}
@@ -289,7 +281,7 @@ function AppContent() {
             onMarkRead={markRead}
             onNavigate={setActiveTab}
           />
-          <main className="knp-content-wrap" style={{ flex: 1, overflowY: 'auto' }}>
+          <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isMobile ? 68 : 0 }}>
             {tab === 'dashboard' && (
               <Dashboard customers={customers} contacts={contacts} employees={employees} />
             )}
@@ -358,10 +350,8 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Bottom nav — CSS ẩn/hiện theo breakpoint */}
-      <div className="knp-bottom-nav">
-        <BottomNav activeTab={tab} onTabChange={setActiveTab} />
-      </div>
+      {/* BottomNav: chỉ render khi mobile — position:fixed nên không ảnh hưởng layout */}
+      {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
     </>
   );
 }

@@ -154,8 +154,8 @@ export default function DebtsPage({ debts, customers, onAdd, onUpdate, onDelete 
           <p className="font-medium">Không có dữ liệu công nợ</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="w-full text-sm" style={{ minWidth: '600px' }}>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Hóa đơn</th>

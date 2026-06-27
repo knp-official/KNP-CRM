@@ -196,8 +196,8 @@ export default function CustomersPage({
           {filtered.length === 0 ? (
             <EmptyState icon={Building2} msg="Không tìm thấy khách hàng" sub="Thử thay đổi bộ lọc hoặc thêm khách hàng mới" />
           ) : (
-            <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                     {['Công ty', 'Loại', 'Tỉnh/Thành', 'Trạng thái', 'Ngày tạo', ''].map(h => (

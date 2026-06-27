@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, UserCheck, Phone, Mail, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users, UserPlus } from 'lucide-react';
 import Modal from '../components/Modal';
 import { PHONG_BAN, TRANG_THAI_NV, VAI_TRO_NV } from '../data/sampleData';
@@ -224,6 +224,14 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [activationModal, setActivationModal] = useState(null);
 
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const h = () => setWinWidth(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const gridCols = winWidth < 768 ? '1fr' : winWidth < 1024 ? '1fr 1fr' : 'repeat(3, 1fr)';
+
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();
     return (!q || e.ho_ten.toLowerCase().includes(q) || e.chuc_vu?.toLowerCase().includes(q) || e.dien_thoai?.includes(q))
@@ -311,7 +319,7 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
       )}
 
       {/* Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '14px' }}>
         {sorted.map(emp => {
           const age          = calcAge(emp.ngay_sinh);
           const daysLeft     = daysUntilBirthday(emp.ngay_sinh);

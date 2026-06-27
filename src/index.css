@@ -54,6 +54,11 @@ body {
   body > #root > div > main { overflow: visible !important; }
 }
 
+/* ── Touch UX ───────────────────────────────────────────────────────────────── */
+* { -webkit-tap-highlight-color: transparent; }
+body { overflow-x: hidden; }
+button, [role="button"] { touch-action: manipulation; }
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 
 /* Sidebar tooltip (collapsed tablet mode) */

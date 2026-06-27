@@ -189,8 +189,8 @@ function QuoteForm({ initial, customers, employees, onSubmit, onAddCustomer, onC
           </button>
         </div>
 
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
-          <table className="w-full text-xs">
+        <div className="border border-slate-200 rounded-lg overflow-hidden" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="w-full text-xs" style={{ minWidth: '500px' }}>
             <thead className="bg-slate-50">
               <tr>
                 <th className="text-left px-3 py-2 font-medium text-slate-600">Sản phẩm / Dịch vụ</th>
@@ -402,8 +402,8 @@ export default function QuotesPage({ quotes, customers, employees, onAdd, onUpda
           <p className="font-medium">Chưa có báo giá nào</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table className="w-full text-sm" style={{ minWidth: '640px' }}>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left px-4 py-3 font-medium text-slate-600">Số BG</th>

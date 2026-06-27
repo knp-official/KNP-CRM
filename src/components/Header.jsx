@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 const ROLE_LABEL   = { admin: 'Admin', manager: 'Quản lý', employee: 'Nhân viên' };
@@ -23,10 +25,19 @@ export default function Header({
   onMarkAllRead,
   onMarkRead,
   onNavigate,
+  onMenuClick,
 }) {
   const role     = userDoc?.vaiTro || 'employee';
   const name     = userDoc?.hoTen  || 'Người dùng';
   const avatarBg = AVATAR_COLOR[role] || '#F15A22';
+
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const h = () => setWinWidth(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isMobile = winWidth < 768;
 
   return (
     <header style={{
@@ -43,8 +54,20 @@ export default function Header({
       top: 0,
       zIndex: 50,
     }}>
-      {/* Left — module title */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
+      {/* Left — hamburger (mobile) + module title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        {isMobile && onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            style={{
+              width: 36, height: 36, border: 'none', background: 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 8, flexShrink: 0,
+            }}
+          >
+            <Menu size={20} color="#374151" />
+          </button>
+        )}
         <h2 style={{
           margin: 0, fontSize: '16px', fontWeight: '500', color: '#111827',
           lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import BottomNav from './components/BottomNav';
 import ViewModeBar from './components/ViewModeBar';
+import DrawerMenu from './components/DrawerMenu';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
 import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
@@ -76,6 +76,7 @@ function AccessDenied({ module }) {
 function AppContent() {
   const { user, userDoc, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Detect window width — TRƯỚC mọi conditional return (Rules of Hooks)
   const [windowWidth, setWindowWidth] = useState(
@@ -341,8 +342,9 @@ function AppContent() {
               onMarkAllRead={markAllRead}
               onMarkRead={markRead}
               onNavigate={setActiveTab}
+              onMenuClick={isMobile ? () => setDrawerOpen(true) : undefined}
             />
-            <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isMobile ? 68 : 0 }}>
+            <main style={{ flex: 1, overflowY: 'auto' }}>
               {tab === 'dashboard' && (
                 <Dashboard customers={customers} contacts={contacts} employees={employees} />
               )}
@@ -412,8 +414,16 @@ function AppContent() {
           </div>
         </div>
 
-        {/* BottomNav: render khi mobile (thật hoặc giả lập) */}
-        {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
+        {/* DrawerMenu: slide-in từ trái trên mobile */}
+        {isMobile && (
+          <DrawerMenu
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            activeTab={tab}
+            onTabChange={setActiveTab}
+            userDoc={userDoc}
+          />
+        )}
       </div>
 
       {/* ViewModeBar: chỉ hiện trên desktop thật >= 1024px */}

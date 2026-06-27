@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { BarChart3, Building2, Users, ClipboardList, TrendingUp } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
 import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
@@ -252,94 +253,146 @@ function AppContent() {
     return addCustomer(isEmployee ? { ...data, managedBy: currentUserUid } : data);
   }
 
+  const BOTTOM_NAV = [
+    { id: 'dashboard', label: 'Tổng quan',  Icon: BarChart3 },
+    { id: 'customers', label: 'Khách hàng', Icon: Building2 },
+    { id: 'employees', label: 'Nhân sự',    Icon: Users },
+    { id: 'tasks',     label: 'Giao việc',  Icon: ClipboardList },
+    { id: 'reports',   label: 'Báo cáo',    Icon: TrendingUp },
+  ];
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; }
+        .knp-sidebar { display: flex; }
+        .knp-bottom-nav { display: none; }
+        .knp-main-pad { padding-bottom: 0; }
+        @media (max-width: 767px) {
+          .knp-sidebar { display: none !important; }
+          .knp-bottom-nav { display: flex !important; }
+          .knp-main-pad { padding-bottom: 64px; }
+        }
       `}</style>
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
-      <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
-        <Header
-          userDoc={userDoc}
-          activeTab={tab}
-          notifications={notifications}
-          readIds={readIds}
-          unreadCount={unreadCount}
-          onMarkAllRead={markAllRead}
-          onMarkRead={markRead}
-          onNavigate={setActiveTab}
-        />
-        <main style={{ flex: 1, overflowY: 'auto' }}>
-          {tab === 'dashboard' && (
-            <Dashboard customers={customers} contacts={contacts} employees={employees} />
-          )}
-          {tab === 'customers' && (
-            <CustomersPage
-              customers={customers} contacts={contacts}
-              onAdd={g(handleAddCustomer, p.customers.add)}
-              onUpdate={g(updateCustomer, p.customers.edit)}
-              onDelete={g(deleteCustomer, p.customers.del)}
-              onAddContact={g(addContact, p.contacts.add)}
-              onUpdateContact={g(updateContact, p.contacts.edit)}
-              onDeleteContact={g(deleteContact, p.contacts.del)}
-              currentUserUid={currentUserUid}
-              isEmployee={isEmployee}
-            />
-          )}
-          {tab === 'employees' && (
-            <EmployeesPage
-              employees={visibleEmployees}
-              onAdd={g(addEmployee, p.employees.add)}
-              onUpdate={isEmployee ? null : (p.employees.edit ? handleUpdateEmployee : null)}
-              onDelete={g(deleteEmployee, p.employees.del)}
-              myEmployeeId={myEmployeeId}
-              isEmployee={isEmployee}
-              onNavigate={setActiveTab}
-            />
-          )}
-          {tab === 'tasks' && (
-            <TasksPage
-              tasks={tasks} customers={customers} employees={employees}
-              onAdd={g(handleAddTask, p.tasks.add)}
-              onUpdate={handleUpdateTask}
-              onDelete={g(deleteTask, p.tasks.del)}
-              myEmployeeId={myEmployeeId}
-            />
-          )}
-          {tab === 'quotes' && (
-            <QuotesPage
-              quotes={quotes} customers={customers} employees={employees}
-              onAdd={g(addQuote, p.quotes.add)}
-              onUpdate={g(updateQuote, p.quotes.edit)}
-              onDelete={g(deleteQuote, p.quotes.del)}
-              onAddCustomer={g(addCustomer, p.customers.add)}
-            />
-          )}
-          {tab === 'debts' && (
-            p.debts.view
-              ? <DebtsPage
-                  debts={debts} customers={customers}
-                  onAdd={g(addDebt, p.debts.add)}
-                  onUpdate={g(updateDebt, p.debts.edit)}
-                  onDelete={g(deleteDebt, p.debts.del)}
-                />
-              : <AccessDenied module="Công nợ" />
-          )}
-          {tab === 'reports' && (
-            <ReportsPage
-              customers={customers} contacts={contacts} employees={employees}
-              tasks={tasks} quotes={quotes} debts={debts}
-              isEmployeeView={isEmployee}
-              myEmployeeId={myEmployeeId}
-              myUid={currentUserUid}
-            />
-          )}
-        </main>
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
+        <div className="knp-sidebar" style={{ flexShrink: 0 }}>
+          <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
+          <Header
+            userDoc={userDoc}
+            activeTab={tab}
+            notifications={notifications}
+            readIds={readIds}
+            unreadCount={unreadCount}
+            onMarkAllRead={markAllRead}
+            onMarkRead={markRead}
+            onNavigate={setActiveTab}
+          />
+          <main className="knp-main-pad" style={{ flex: 1, overflowY: 'auto' }}>
+            {tab === 'dashboard' && (
+              <Dashboard customers={customers} contacts={contacts} employees={employees} />
+            )}
+            {tab === 'customers' && (
+              <CustomersPage
+                customers={customers} contacts={contacts}
+                onAdd={g(handleAddCustomer, p.customers.add)}
+                onUpdate={g(updateCustomer, p.customers.edit)}
+                onDelete={g(deleteCustomer, p.customers.del)}
+                onAddContact={g(addContact, p.contacts.add)}
+                onUpdateContact={g(updateContact, p.contacts.edit)}
+                onDeleteContact={g(deleteContact, p.contacts.del)}
+                currentUserUid={currentUserUid}
+                isEmployee={isEmployee}
+              />
+            )}
+            {tab === 'employees' && (
+              <EmployeesPage
+                employees={visibleEmployees}
+                onAdd={g(addEmployee, p.employees.add)}
+                onUpdate={isEmployee ? null : (p.employees.edit ? handleUpdateEmployee : null)}
+                onDelete={g(deleteEmployee, p.employees.del)}
+                myEmployeeId={myEmployeeId}
+                isEmployee={isEmployee}
+                onNavigate={setActiveTab}
+              />
+            )}
+            {tab === 'tasks' && (
+              <TasksPage
+                tasks={tasks} customers={customers} employees={employees}
+                onAdd={g(handleAddTask, p.tasks.add)}
+                onUpdate={handleUpdateTask}
+                onDelete={g(deleteTask, p.tasks.del)}
+                myEmployeeId={myEmployeeId}
+              />
+            )}
+            {tab === 'quotes' && (
+              <QuotesPage
+                quotes={quotes} customers={customers} employees={employees}
+                onAdd={g(addQuote, p.quotes.add)}
+                onUpdate={g(updateQuote, p.quotes.edit)}
+                onDelete={g(deleteQuote, p.quotes.del)}
+                onAddCustomer={g(addCustomer, p.customers.add)}
+              />
+            )}
+            {tab === 'debts' && (
+              p.debts.view
+                ? <DebtsPage
+                    debts={debts} customers={customers}
+                    onAdd={g(addDebt, p.debts.add)}
+                    onUpdate={g(updateDebt, p.debts.edit)}
+                    onDelete={g(deleteDebt, p.debts.del)}
+                  />
+                : <AccessDenied module="Công nợ" />
+            )}
+            {tab === 'reports' && (
+              <ReportsPage
+                customers={customers} contacts={contacts} employees={employees}
+                tasks={tasks} quotes={quotes} debts={debts}
+                isEmployeeView={isEmployee}
+                myEmployeeId={myEmployeeId}
+                myUid={currentUserUid}
+              />
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+
+      {/* Bottom navigation — chỉ hiện trên mobile */}
+      <nav
+        className="knp-bottom-nav"
+        style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+          backgroundColor: '#fff', borderTop: '0.5px solid #e5e7eb',
+          height: '64px', alignItems: 'stretch',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          fontFamily: "'Inter', system-ui, sans-serif",
+        }}
+      >
+        {BOTTOM_NAV.map(({ id, label, Icon }) => {
+          const isActive = tab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', gap: '3px', border: 'none', background: 'none',
+                cursor: 'pointer', padding: '8px 4px', fontFamily: 'inherit',
+                color: isActive ? '#F15A22' : '#9CA3AF',
+                transition: 'color 0.12s',
+              }}
+            >
+              <Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} />
+              <span style={{ fontSize: '10px', fontWeight: isActive ? '600' : '400', lineHeight: 1 }}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
     </>
   );
 }

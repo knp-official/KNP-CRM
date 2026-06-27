@@ -105,9 +105,12 @@ function AppContent() {
     return unsub;
   }, []);
 
-  // View mode switcher (tất cả user)
+  // View mode switcher — chỉ giả lập khi đang ở desktop thật (>= 1024px)
   const [viewMode, setViewMode] = useState('desktop');
-  const simulatedWidth = viewMode === 'mobile' ? 375 : viewMode === 'tablet' ? 768 : null;
+  const isRealDesktop = windowWidth >= 1024;
+  const simulatedWidth = isRealDesktop
+    ? (viewMode === 'mobile' ? 375 : viewMode === 'tablet' ? 768 : null)
+    : null;
 
   // Width dùng cho logic responsive: ưu tiên simulatedWidth nếu đang giả lập
   const effectiveWidth = simulatedWidth ?? windowWidth;
@@ -413,8 +416,8 @@ function AppContent() {
         {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
       </div>
 
-      {/* ViewModeBar: mọi user, luôn fixed so không bị ảnh hưởng bởi wrapper */}
-      <ViewModeBar mode={viewMode} onChange={setViewMode} />
+      {/* ViewModeBar: chỉ hiện trên desktop thật >= 1024px */}
+      {isRealDesktop && <ViewModeBar mode={viewMode} onChange={setViewMode} />}
     </>
   );
 }

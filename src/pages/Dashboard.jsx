@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Building2, Users, TrendingUp, UserCheck, Shield, Cake, MapPin } from 'lucide-react';
 import { TRANG_THAI_KH, LOAI_KHACH_HANG, PHONG_BAN } from '../data/sampleData';
 
@@ -125,6 +125,15 @@ const STATUS_COLOR = {
 };
 
 export default function Dashboard({ customers, contacts, employees }) {
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const h = () => setWinWidth(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isMobile = winWidth < 768;
+  const isTablet = winWidth >= 768 && winWidth < 1024;
+
   const byStatus = TRANG_THAI_KH.map(t => ({ label: t, count: customers.filter(c => c.trang_thai === t).length }));
   const byType   = LOAI_KHACH_HANG.map(l => ({ label: l, count: customers.filter(c => c.loai === l).length })).filter(x => x.count > 0);
   const recent   = [...customers].sort((a, b) => b.ngay_tao.localeCompare(a.ngay_tao)).slice(0, 5);
@@ -132,8 +141,11 @@ export default function Dashboard({ customers, contacts, employees }) {
 
   const TYPE_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
 
+  const pad = isMobile ? '12px' : '28px';
+  const gap = isMobile ? '12px' : '24px';
+
   return (
-    <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap, fontFamily: "'Inter', system-ui, sans-serif" }}>
 
       {/* Page heading */}
       <div>
@@ -142,7 +154,7 @@ export default function Dashboard({ customers, contacts, employees }) {
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '8px' : '16px' }}>
         <StatCard icon={Building2} label="Tổng khách hàng"  value={customers.length}                                              iconBg="#FFF3EE"  iconColor={DS.primary}  />
         <StatCard icon={Users}     label="Tổng liên hệ"     value={contacts.length}                                               iconBg="#EFF6FF"  iconColor={DS.blue}     />
         <StatCard icon={TrendingUp} label="Đang hợp tác"    value={customers.filter(c => c.trang_thai === 'Đang hợp tác').length} iconBg="#ECFDF5"  iconColor={DS.success}  />
@@ -150,10 +162,10 @@ export default function Dashboard({ customers, contacts, employees }) {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: isMobile ? '12px' : '16px' }}>
 
         {/* By status */}
-        <div style={card}>
+        <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '600', color: DS.text1, margin: '0 0 18px' }}>Theo trạng thái</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {byStatus.map(({ label, count }) => {
@@ -175,7 +187,7 @@ export default function Dashboard({ customers, contacts, employees }) {
         </div>
 
         {/* By type */}
-        <div style={card}>
+        <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '600', color: DS.text1, margin: '0 0 18px' }}>Theo loại khách hàng</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {byType.map(({ label, count }, i) => {
@@ -201,7 +213,7 @@ export default function Dashboard({ customers, contacts, employees }) {
 
       {/* Leadership */}
       {leaders.length > 0 && (
-        <div style={card}>
+        <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
             {sectionIcon('#FEE2E2', <Shield size={16} style={{ color: '#DC2626' }} />)}
             <h3 style={{ fontSize: '15px', fontWeight: '600', color: DS.text1, margin: 0 }}>Ban lãnh đạo</h3>
@@ -237,12 +249,12 @@ export default function Dashboard({ customers, contacts, employees }) {
       )}
 
       {/* Employees by dept */}
-      <div style={card}>
+      <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
           {sectionIcon(DS.primaryLight, <UserCheck size={16} style={{ color: DS.primary }} />)}
           <h3 style={{ fontSize: '15px', fontWeight: '600', color: DS.text1, margin: 0 }}>Nhân viên theo phòng ban</h3>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
           {PHONG_BAN.map(pb => {
             const count     = employees.filter(e => e.phong_ban === pb && e.trang_thai === 'Đang làm việc').length;
             const shortName = pb.replace('Phòng ', '');
@@ -257,7 +269,7 @@ export default function Dashboard({ customers, contacts, employees }) {
       </div>
 
       {/* Recent customers */}
-      <div style={card}>
+      <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
         <h3 style={{ fontSize: '15px', fontWeight: '600', color: DS.text1, margin: '0 0 16px' }}>Khách hàng mới nhất</h3>
         <div>
           {recent.map((c, i) => {

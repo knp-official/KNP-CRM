@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import BottomNav from './components/BottomNav';
+import ViewModeBar from './components/ViewModeBar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
 import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
@@ -84,7 +85,14 @@ function AppContent() {
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
-  const isMobile = windowWidth < 768;
+
+  // View mode switcher (Admin only)
+  const [viewMode, setViewMode] = useState('desktop');
+  const simulatedWidth = viewMode === 'mobile' ? 375 : viewMode === 'tablet' ? 768 : null;
+
+  // Width dùng cho logic responsive: ưu tiên simulatedWidth nếu đang giả lập
+  const effectiveWidth = simulatedWidth ?? windowWidth;
+  const isMobile = effectiveWidth < 768;
 
   // ── ALL hooks must be called unconditionally (Rules of Hooks) ──
   const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
@@ -264,94 +272,116 @@ function AppContent() {
     return addCustomer(isEmployee ? { ...data, managedBy: currentUserUid } : data);
   }
 
+  const isAdmin = role === 'admin';
+
   return (
     <>
-      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
-        {/* Sidebar tự quản lý responsive bên trong — return null khi mobile */}
-        <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
-          <Header
-            userDoc={userDoc}
+      {/* Wrapper giả lập kích thước màn hình theo viewMode */}
+      <div style={{
+        maxWidth: simulatedWidth ? `${simulatedWidth}px` : '100%',
+        margin: simulatedWidth ? '0 auto' : undefined,
+        boxShadow: simulatedWidth ? '0 0 0 1px #e5e7eb, 0 8px 32px rgba(0,0,0,0.12)' : undefined,
+        minHeight: '100vh',
+        background: '#F5F6FA',
+        position: 'relative',
+        transition: 'max-width 0.3s ease',
+        overflow: simulatedWidth ? 'hidden' : undefined,
+      }}>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
+          <Sidebar
             activeTab={tab}
-            notifications={notifications}
-            readIds={readIds}
-            unreadCount={unreadCount}
-            onMarkAllRead={markAllRead}
-            onMarkRead={markRead}
-            onNavigate={setActiveTab}
+            onTabChange={setActiveTab}
+            userDoc={userDoc}
+            simulatedWidth={simulatedWidth}
           />
-          <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isMobile ? 68 : 0 }}>
-            {tab === 'dashboard' && (
-              <Dashboard customers={customers} contacts={contacts} employees={employees} />
-            )}
-            {tab === 'customers' && (
-              <CustomersPage
-                customers={customers} contacts={contacts}
-                onAdd={g(handleAddCustomer, p.customers.add)}
-                onUpdate={g(updateCustomer, p.customers.edit)}
-                onDelete={g(deleteCustomer, p.customers.del)}
-                onAddContact={g(addContact, p.contacts.add)}
-                onUpdateContact={g(updateContact, p.contacts.edit)}
-                onDeleteContact={g(deleteContact, p.contacts.del)}
-                currentUserUid={currentUserUid}
-                isEmployee={isEmployee}
-              />
-            )}
-            {tab === 'employees' && (
-              <EmployeesPage
-                employees={visibleEmployees}
-                onAdd={g(addEmployee, p.employees.add)}
-                onUpdate={isEmployee ? null : (p.employees.edit ? handleUpdateEmployee : null)}
-                onDelete={g(deleteEmployee, p.employees.del)}
-                myEmployeeId={myEmployeeId}
-                isEmployee={isEmployee}
-                onNavigate={setActiveTab}
-              />
-            )}
-            {tab === 'tasks' && (
-              <TasksPage
-                tasks={tasks} customers={customers} employees={employees}
-                onAdd={g(handleAddTask, p.tasks.add)}
-                onUpdate={handleUpdateTask}
-                onDelete={g(deleteTask, p.tasks.del)}
-                myEmployeeId={myEmployeeId}
-              />
-            )}
-            {tab === 'quotes' && (
-              <QuotesPage
-                quotes={quotes} customers={customers} employees={employees}
-                onAdd={g(addQuote, p.quotes.add)}
-                onUpdate={g(updateQuote, p.quotes.edit)}
-                onDelete={g(deleteQuote, p.quotes.del)}
-                onAddCustomer={g(addCustomer, p.customers.add)}
-              />
-            )}
-            {tab === 'debts' && (
-              p.debts.view
-                ? <DebtsPage
-                    debts={debts} customers={customers}
-                    onAdd={g(addDebt, p.debts.add)}
-                    onUpdate={g(updateDebt, p.debts.edit)}
-                    onDelete={g(deleteDebt, p.debts.del)}
-                  />
-                : <AccessDenied module="Công nợ" />
-            )}
-            {tab === 'reports' && (
-              <ReportsPage
-                customers={customers} contacts={contacts} employees={employees}
-                tasks={tasks} quotes={quotes} debts={debts}
-                isEmployeeView={isEmployee}
-                myEmployeeId={myEmployeeId}
-                myUid={currentUserUid}
-              />
-            )}
-          </main>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
+            <Header
+              userDoc={userDoc}
+              activeTab={tab}
+              notifications={notifications}
+              readIds={readIds}
+              unreadCount={unreadCount}
+              onMarkAllRead={markAllRead}
+              onMarkRead={markRead}
+              onNavigate={setActiveTab}
+            />
+            <main style={{ flex: 1, overflowY: 'auto', paddingBottom: isMobile ? 68 : 0 }}>
+              {tab === 'dashboard' && (
+                <Dashboard customers={customers} contacts={contacts} employees={employees} />
+              )}
+              {tab === 'customers' && (
+                <CustomersPage
+                  customers={customers} contacts={contacts}
+                  onAdd={g(handleAddCustomer, p.customers.add)}
+                  onUpdate={g(updateCustomer, p.customers.edit)}
+                  onDelete={g(deleteCustomer, p.customers.del)}
+                  onAddContact={g(addContact, p.contacts.add)}
+                  onUpdateContact={g(updateContact, p.contacts.edit)}
+                  onDeleteContact={g(deleteContact, p.contacts.del)}
+                  currentUserUid={currentUserUid}
+                  isEmployee={isEmployee}
+                />
+              )}
+              {tab === 'employees' && (
+                <EmployeesPage
+                  employees={visibleEmployees}
+                  onAdd={g(addEmployee, p.employees.add)}
+                  onUpdate={isEmployee ? null : (p.employees.edit ? handleUpdateEmployee : null)}
+                  onDelete={g(deleteEmployee, p.employees.del)}
+                  myEmployeeId={myEmployeeId}
+                  isEmployee={isEmployee}
+                  onNavigate={setActiveTab}
+                  viewMode={viewMode}
+                />
+              )}
+              {tab === 'tasks' && (
+                <TasksPage
+                  tasks={tasks} customers={customers} employees={employees}
+                  onAdd={g(handleAddTask, p.tasks.add)}
+                  onUpdate={handleUpdateTask}
+                  onDelete={g(deleteTask, p.tasks.del)}
+                  myEmployeeId={myEmployeeId}
+                />
+              )}
+              {tab === 'quotes' && (
+                <QuotesPage
+                  quotes={quotes} customers={customers} employees={employees}
+                  onAdd={g(addQuote, p.quotes.add)}
+                  onUpdate={g(updateQuote, p.quotes.edit)}
+                  onDelete={g(deleteQuote, p.quotes.del)}
+                  onAddCustomer={g(addCustomer, p.customers.add)}
+                />
+              )}
+              {tab === 'debts' && (
+                p.debts.view
+                  ? <DebtsPage
+                      debts={debts} customers={customers}
+                      onAdd={g(addDebt, p.debts.add)}
+                      onUpdate={g(updateDebt, p.debts.edit)}
+                      onDelete={g(deleteDebt, p.debts.del)}
+                    />
+                  : <AccessDenied module="Công nợ" />
+              )}
+              {tab === 'reports' && (
+                <ReportsPage
+                  customers={customers} contacts={contacts} employees={employees}
+                  tasks={tasks} quotes={quotes} debts={debts}
+                  isEmployeeView={isEmployee}
+                  myEmployeeId={myEmployeeId}
+                  myUid={currentUserUid}
+                />
+              )}
+            </main>
+          </div>
         </div>
+
+        {/* BottomNav: render khi mobile (thật hoặc giả lập) */}
+        {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
       </div>
 
-      {/* BottomNav: chỉ render khi mobile — position:fixed nên không ảnh hưởng layout */}
-      {isMobile && <BottomNav activeTab={tab} onTabChange={setActiveTab} />}
+      {/* ViewModeBar: chỉ Admin, luôn fixed so không bị ảnh hưởng bởi wrapper */}
+      {isAdmin && <ViewModeBar mode={viewMode} onChange={setViewMode} />}
     </>
   );
 }

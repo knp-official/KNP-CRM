@@ -214,7 +214,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false
 }
 
 /* ── Main page ──────────────────────────────────────────────────────── */
-export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee, onNavigate }) {
+export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee, onNavigate, viewMode }) {
   const [search, setSearch]         = useState('');
   const [filterPB, setFilterPB]     = useState('');
   const [sort, setSort]             = useState('ten_az');
@@ -230,7 +230,12 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
   }, []);
-  const gridCols = winWidth < 768 ? '1fr' : winWidth < 1024 ? '1fr 1fr' : 'repeat(3, 1fr)';
+  // viewMode từ App (giả lập) ưu tiên hơn window width thật
+  const cols = viewMode === 'mobile' ? '1fr'
+    : viewMode === 'tablet' ? '1fr 1fr'
+    : viewMode === 'desktop' ? 'repeat(3, 1fr)'
+    : winWidth < 768 ? '1fr' : winWidth < 1024 ? '1fr 1fr' : 'repeat(3, 1fr)';
+  const gridCols = cols;
 
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();

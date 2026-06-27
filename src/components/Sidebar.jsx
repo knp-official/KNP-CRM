@@ -20,18 +20,20 @@ const NAV_GROUPS = [
 const ROLE_LABEL  = { admin: 'Admin', manager: 'Quản lý', employee: 'Nhân viên' };
 const AVATAR_COLOR = { admin: '#534AB7', manager: '#1D9E75', employee: '#F15A22' };
 
-export default function Sidebar({ activeTab, onTabChange, userDoc }) {
+export default function Sidebar({ activeTab, onTabChange, userDoc, simulatedWidth }) {
   const role     = userDoc?.vaiTro || 'employee';
   const name     = userDoc?.hoTen  || 'Người dùng';
   const avatarBg = AVATAR_COLOR[role] || '#F15A22';
 
-  const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   useEffect(() => {
-    const handler = () => setWidth(window.innerWidth);
+    const handler = () => setWinWidth(window.innerWidth);
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // Khi có simulatedWidth (từ ViewModeBar) dùng nó, ngược lại dùng window width thật
+  const width     = simulatedWidth ?? winWidth;
   const isMobile  = width < 768;
   const isTablet  = width >= 768 && width < 1024;
   const collapsed = isTablet;

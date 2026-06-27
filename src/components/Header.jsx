@@ -1,6 +1,6 @@
 import NotificationBell from './NotificationBell';
 
-const ROLE_LABEL = { admin: 'Admin', manager: 'Quản lý', employee: 'Nhân viên' };
+const ROLE_LABEL   = { admin: 'Admin', manager: 'Quản lý', employee: 'Nhân viên' };
 const AVATAR_COLOR = { admin: '#534AB7', manager: '#1D9E75', employee: '#F15A22' };
 
 const TAB_LABEL = {
@@ -36,25 +36,35 @@ export default function Header({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 24px',
+      padding: '0 16px',
       flexShrink: 0,
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
     }}>
       {/* Left — module title */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-        <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '500', color: '#111827', lineHeight: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
+        <h2 style={{
+          margin: 0, fontSize: '16px', fontWeight: '500', color: '#111827',
+          lineHeight: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
           {TAB_LABEL[activeTab] || 'KNP CRM'}
         </h2>
         {recordCount != null && (
-          <span style={{ fontSize: '13px', color: '#9CA3AF' }}>{recordCount} bản ghi</span>
+          <span className="knp-header-count" style={{ fontSize: '13px', color: '#9CA3AF', whiteSpace: 'nowrap' }}>
+            {recordCount} bản ghi
+          </span>
         )}
       </div>
 
-      {/* Right — role badge + bell + avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{
+      {/* Right */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {/* Role badge — ẩn trên mobile nhỏ */}
+        <span className="knp-role-badge" style={{
           fontSize: '12px', fontWeight: '500', padding: '3px 10px',
           borderRadius: '999px', backgroundColor: '#FEF2EC', color: '#F15A22',
+          whiteSpace: 'nowrap',
         }}>
           {ROLE_LABEL[role]}
         </span>
@@ -68,8 +78,9 @@ export default function Header({
           onNavigate={onNavigate}
         />
 
-        <div style={{ width: '1px', height: '20px', backgroundColor: '#e5e7eb' }} />
+        <div className="knp-header-divider" style={{ width: '1px', height: '20px', backgroundColor: '#e5e7eb' }} />
 
+        {/* Avatar + name — text ẩn trên mobile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             width: '32px', height: '32px',
@@ -82,11 +93,11 @@ export default function Header({
               {name.charAt(0)}
             </span>
           </div>
-          <div>
-            <p style={{ margin: 0, fontSize: '13px', fontWeight: '500', color: '#111827', lineHeight: '1.3' }}>
+          <div className="knp-header-userinfo">
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: '500', color: '#111827', lineHeight: '1.3', whiteSpace: 'nowrap' }}>
               {name}
             </p>
-            <p style={{ margin: 0, fontSize: '11px', color: '#9CA3AF', lineHeight: '1.3' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: '#9CA3AF', lineHeight: '1.3', whiteSpace: 'nowrap' }}>
               {userDoc?.phongBan || ''}
             </p>
           </div>

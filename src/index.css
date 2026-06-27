@@ -53,3 +53,66 @@ body {
   body > #root > div > div:first-child { display: none !important; }
   body > #root > div > main { overflow: visible !important; }
 }
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+
+/* Sidebar tooltip (collapsed tablet mode) */
+.knp-nav-item-wrap:hover .knp-tooltip {
+  opacity: 1 !important;
+}
+
+/* Desktop default: sidebar full, bottom nav hidden */
+.knp-sidebar-wrap  { display: flex; flex-shrink: 0; }
+.knp-bottom-nav    { display: none !important; }
+.knp-content-wrap  { padding-bottom: 0; }
+
+/* Header: show user name + divider on desktop */
+.knp-header-userinfo  { display: block; }
+.knp-header-divider   { display: block; }
+.knp-header-count     { display: inline; }
+.knp-role-badge       { display: inline-flex; }
+
+/* ── Tablet: 768px – 1024px — sidebar icon-only ─────────────────── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .knp-sidebar-wrap .knp-sidebar-collapsed { display: flex; }
+}
+
+/* ── Mobile: < 768px — hide sidebar, show bottom nav ───────────────────── */
+@media (max-width: 767px) {
+  .knp-sidebar-wrap  { display: none !important; }
+  .knp-bottom-nav    { display: flex !important; }
+  .knp-content-wrap  { padding-bottom: 60px; }
+
+  /* Header: compact on mobile */
+  .knp-header-userinfo { display: none; }
+  .knp-header-divider  { display: none; }
+  .knp-header-count    { display: none; }
+  .knp-role-badge      { display: none; }
+
+  /* Page padding: tighter on mobile */
+  .knp-page-pad { padding: 16px !important; }
+
+  /* Grids: 1 column on mobile */
+  .knp-grid-3 { grid-template-columns: 1fr !important; }
+  .knp-grid-2 { grid-template-columns: 1fr !important; }
+  .knp-grid-stat { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Tables: horizontal scroll */
+  .knp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .knp-table-wrap table { min-width: 600px; }
+
+  /* Modal: full-width on mobile */
+  .knp-modal-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}

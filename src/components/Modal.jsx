@@ -1,6 +1,8 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
+const SIZE_WIDTHS = { sm: '440px', md: '672px', lg: '800px' };
+
 export default function Modal({ title, onClose, children, size = 'md' }) {
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -8,19 +10,54 @@ export default function Modal({ title, onClose, children, size = 'md' }) {
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  const widths = { sm: 'max-w-md', md: 'max-w-2xl', lg: 'max-w-3xl' };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className={`relative bg-white rounded-xl shadow-xl w-full ${widths[size]} max-h-[90vh] flex flex-col`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '16px',
+    }}>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)' }}
+      />
+      {/* Modal box */}
+      <div
+        className="knp-modal-box"
+        style={{
+          position: 'relative',
+          backgroundColor: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          width: '100%',
+          maxWidth: SIZE_WIDTHS[size] || '672px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderBottom: '1px solid #e5e7eb', flexShrink: 0,
+        }}>
+          <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>{title}</h2>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#9CA3AF', padding: '4px', borderRadius: '6px',
+              display: 'flex', transition: 'color 0.12s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#374151'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#9CA3AF'; }}
+          >
             <X size={20} />
           </button>
         </div>
-        <div className="overflow-y-auto flex-1 px-6 py-4">
+        {/* Content */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
           {children}
         </div>
       </div>

@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { BarChart3, Building2, Users, ClipboardList, TrendingUp } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import BottomNav from './components/BottomNav';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useNotifications } from './hooks/useNotifications';
 import { useFirestoreNotifications } from './hooks/useFirestoreNotifications';
@@ -253,32 +253,30 @@ function AppContent() {
     return addCustomer(isEmployee ? { ...data, managedBy: currentUserUid } : data);
   }
 
-  const BOTTOM_NAV = [
-    { id: 'dashboard', label: 'Tổng quan',  Icon: BarChart3 },
-    { id: 'customers', label: 'Khách hàng', Icon: Building2 },
-    { id: 'employees', label: 'Nhân sự',    Icon: Users },
-    { id: 'tasks',     label: 'Giao việc',  Icon: ClipboardList },
-    { id: 'reports',   label: 'Báo cáo',    Icon: TrendingUp },
-  ];
+  // Detect tablet breakpoint để collapse sidebar (768–1024px)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    typeof window !== 'undefined' && window.innerWidth > 767 && window.innerWidth <= 1024
+  );
+
+  useEffect(() => {
+    function onResize() {
+      const w = window.innerWidth;
+      setSidebarCollapsed(w > 767 && w <= 1024);
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; }
-        .knp-sidebar { display: flex; }
-        .knp-bottom-nav { display: none; }
-        .knp-main-pad { padding-bottom: 0; }
-        @media (max-width: 767px) {
-          .knp-sidebar { display: none !important; }
-          .knp-bottom-nav { display: flex !important; }
-          .knp-main-pad { padding-bottom: 64px; }
-        }
-      `}</style>
       <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F5F6FA' }}>
-        <div className="knp-sidebar" style={{ flexShrink: 0 }}>
-          <Sidebar activeTab={tab} onTabChange={setActiveTab} userDoc={userDoc} />
+        <div className="knp-sidebar-wrap">
+          <Sidebar
+            activeTab={tab}
+            onTabChange={setActiveTab}
+            userDoc={userDoc}
+            collapsed={sidebarCollapsed}
+          />
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '100vh' }}>
           <Header
@@ -291,7 +289,7 @@ function AppContent() {
             onMarkRead={markRead}
             onNavigate={setActiveTab}
           />
-          <main className="knp-main-pad" style={{ flex: 1, overflowY: 'auto' }}>
+          <main className="knp-content-wrap" style={{ flex: 1, overflowY: 'auto' }}>
             {tab === 'dashboard' && (
               <Dashboard customers={customers} contacts={contacts} employees={employees} />
             )}
@@ -360,39 +358,10 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Bottom navigation — chỉ hiện trên mobile */}
-      <nav
-        className="knp-bottom-nav"
-        style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-          backgroundColor: '#fff', borderTop: '0.5px solid #e5e7eb',
-          height: '64px', alignItems: 'stretch',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          fontFamily: "'Inter', system-ui, sans-serif",
-        }}
-      >
-        {BOTTOM_NAV.map(({ id, label, Icon }) => {
-          const isActive = tab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              style={{
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                justifyContent: 'center', gap: '3px', border: 'none', background: 'none',
-                cursor: 'pointer', padding: '8px 4px', fontFamily: 'inherit',
-                color: isActive ? '#F15A22' : '#9CA3AF',
-                transition: 'color 0.12s',
-              }}
-            >
-              <Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} />
-              <span style={{ fontSize: '10px', fontWeight: isActive ? '600' : '400', lineHeight: 1 }}>
-                {label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* Bottom nav — CSS ẩn/hiện theo breakpoint */}
+      <div className="knp-bottom-nav">
+        <BottomNav activeTab={tab} onTabChange={setActiveTab} />
+      </div>
     </>
   );
 }

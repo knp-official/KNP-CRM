@@ -65,9 +65,10 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
     ? employees.find(e => e.id === myEmp.quan_ly_id)
     : null;
 
-  const nguoiDuyetList = employees.filter(e =>
-    e.vai_tro === 'Admin' || e.vaiTro === 'Admin'
-  );
+  const nguoiDuyetList = (employees || []).filter(emp => {
+    const vt = (emp.vaiTro || emp.vai_tro || emp.role || '').toLowerCase().trim();
+    return vt === 'admin';
+  });
 
   const [loai, setLoai]   = useState('ngay');
   const [form, setForm]   = useState({

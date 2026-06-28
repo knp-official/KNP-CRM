@@ -215,7 +215,7 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
           {/* Người duyệt */}
           <div>
             <label style={lbl}>Người duyệt</label>
-            <select style={{ ...inp, appearance: 'none' }}
+            <select style={{ ...inp, appearance: 'auto', cursor: 'pointer' }}
               value={form.nguoi_duyet_id}
               onChange={e => {
                 const emp = nguoiDuyetList.find(x => x.id === e.target.value);

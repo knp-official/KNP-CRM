@@ -244,23 +244,9 @@ function LoginView({ onForgot }) {
     const [fmt0, fmt84] = phoneFormats(phone);
 
     try {
-      // Bước 1: kiểm tra SĐT tồn tại trong Firestore trước
-      const [snap0, snap84] = await Promise.all([
-        getDocs(query(collection(db, 'employees'), where('dien_thoai', '==', fmt0))),
-        getDocs(query(collection(db, 'employees'), where('dien_thoai', '==', fmt84))),
-      ]);
-      const allDocs = [...snap0.docs, ...snap84.docs];
-
-      if (allDocs.length === 0) {
-        setError('Số điện thoại này chưa được đăng ký trong hệ thống. Liên hệ quản trị viên.');
-        return;
-      }
-
-      const empDoc = allDocs[0];
-      const emp    = empDoc.data();
-
-      // Bước 2: đăng nhập hoặc tạo tài khoản Firebase Auth
+      // Bước 1: đăng nhập Firebase Auth trước — cần token trước khi query Firestore
       let uid;
+      let isNewAccount = false;
       try {
         const cred = await signInWithEmailAndPassword(auth, internalEmail, pin);
         uid = cred.user.uid;
@@ -272,10 +258,29 @@ function LoginView({ onForgot }) {
           // Lần đầu đăng nhập — tạo account mới
           const cred = await createUserWithEmailAndPassword(auth, internalEmail, pin);
           uid = cred.user.uid;
+          isNewAccount = true;
         } else {
           throw signInErr;
         }
       }
+
+      // Bước 2: đã có auth token → query Firestore an toàn
+      const [snap0, snap84] = await Promise.all([
+        getDocs(query(collection(db, 'employees'), where('dien_thoai', '==', fmt0))),
+        getDocs(query(collection(db, 'employees'), where('dien_thoai', '==', fmt84))),
+      ]);
+      const allDocs = [...snap0.docs, ...snap84.docs];
+
+      if (allDocs.length === 0) {
+        // SĐT không có trong hệ thống — hủy đăng nhập
+        if (isNewAccount) await auth.currentUser?.delete();
+        else await signOut(auth);
+        setError('Số điện thoại này chưa được đăng ký trong hệ thống. Liên hệ quản trị viên.');
+        return;
+      }
+
+      const empDoc = allDocs[0];
+      const emp    = empDoc.data();
 
       // Bước 3: tạo/cập nhật users/{uid} để AuthContext nhận diện
       await setDoc(doc(db, 'users', uid), {

@@ -1,6 +1,39 @@
 import { useEffect, useState } from 'react';
-import { Building2, Users, TrendingUp, UserCheck, Shield, Cake, MapPin } from 'lucide-react';
+import { Building2, Users, TrendingUp, UserCheck, Shield, Cake, MapPin, AlertCircle, Clock, ClipboardList } from 'lucide-react';
 import { TRANG_THAI_KH, LOAI_KHACH_HANG, PHONG_BAN } from '../data/sampleData';
+
+function isOverdue(task) {
+  const done = ['Hoàn thành', 'done', 'completed'];
+  if (done.includes(task.trang_thai || '')) return false;
+  const dl = task.deadline || task.han_chot || task.due_date;
+  if (!dl) return false;
+  let d;
+  if (dl?.toDate) d = dl.toDate();
+  else if (dl?.seconds) d = new Date(dl.seconds * 1000);
+  else d = new Date(dl);
+  return !isNaN(d) && d < new Date();
+}
+
+function fmtDeadline(dl) {
+  if (!dl) return '';
+  let d;
+  if (dl?.toDate) d = dl.toDate();
+  else if (dl?.seconds) d = new Date(dl.seconds * 1000);
+  else d = new Date(dl);
+  if (isNaN(d)) return '';
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function daysLeft(dl) {
+  if (!dl) return null;
+  let d;
+  if (dl?.toDate) d = dl.toDate();
+  else if (dl?.seconds) d = new Date(dl.seconds * 1000);
+  else d = new Date(dl);
+  if (isNaN(d)) return null;
+  return Math.round((d - Date.now()) / 86400000);
+}
 
 /* ── Design tokens ────────────────────────────────────────────────────── */
 const DS = {
@@ -124,7 +157,7 @@ const STATUS_COLOR = {
   'Mới':           { bg: '#F5F3FF', color: '#6D28D9', bar: '#8B5CF6' },
 };
 
-export default function Dashboard({ customers, contacts, employees }) {
+export default function Dashboard({ customers, contacts, employees, tasks = [], role = 'admin', myEmployeeId, myEmployee, mySubordinateIds = [], onNavigate }) {
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   useEffect(() => {
     const h = () => setWinWidth(window.innerWidth);
@@ -160,6 +193,144 @@ export default function Dashboard({ customers, contacts, employees }) {
         <StatCard icon={TrendingUp} label="Đang hợp tác"    value={customers.filter(c => c.trang_thai === 'Đang hợp tác').length} iconBg="#ECFDF5"  iconColor={DS.success}  />
         <StatCard icon={UserCheck} label="Nhân viên"        value={employees.filter(e => e.trang_thai === 'Đang làm việc').length} iconBg="#F5F3FF" iconColor={DS.purple}  />
       </div>
+
+      {/* ── NHẮC VIỆC ─────────────────────────────────────────────────── */}
+      {(() => {
+        const now = new Date();
+        const in3days = new Date(now.getTime() + 3 * 86400000);
+        const overdue  = tasks.filter(isOverdue).slice(0, 5);
+        const upcoming = tasks.filter(t => {
+          if (t.trang_thai === 'Hoàn thành') return false;
+          const dl = t.deadline || t.han_chot;
+          if (!dl) return false;
+          let d;
+          if (dl?.toDate) d = dl.toDate();
+          else if (dl?.seconds) d = new Date(dl.seconds * 1000);
+          else d = new Date(dl);
+          return !isNaN(d) && d >= now && d <= in3days;
+        }).slice(0, 5);
+
+        if (overdue.length === 0 && upcoming.length === 0) return null;
+
+        const TaskRow = ({ task, isOv }) => {
+          const emp = employees.find(e => e.id === task.nhan_vien_id);
+          const dl  = daysLeft(task.deadline || task.han_chot);
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '0.5px solid #f3f4f6' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: isOv ? '#FEF2F2' : '#FEF2EC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {isOv ? <AlertCircle size={15} color="#ef4444" /> : <Clock size={15} color="#F15A22" />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.tieu_de}</p>
+                <p style={{ margin: 0, fontSize: 11, color: '#9CA3AF' }}>{emp?.ho_ten || '—'} · {fmtDeadline(task.deadline || task.han_chot)}</p>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999, flexShrink: 0, background: isOv ? '#FEF2F2' : '#FEF2EC', color: isOv ? '#ef4444' : '#F15A22' }}>
+                {isOv ? 'Quá hạn' : dl === 0 ? 'Hôm nay' : dl === 1 ? 'Ngày mai' : `Còn ${dl} ngày`}
+              </span>
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              {sectionIcon('#FEF2F2', <AlertCircle size={16} color="#ef4444" />)}
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: DS.text1, margin: 0 }}>Nhắc việc</h3>
+              {onNavigate && (
+                <button onClick={() => onNavigate('tasks')} style={{ marginLeft: 'auto', fontSize: 12, color: '#F15A22', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 500 }}>
+                  Xem tất cả →
+                </button>
+              )}
+            </div>
+            {overdue.length > 0 && (
+              <div style={{ marginBottom: upcoming.length ? 16 : 0 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#ef4444', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quá hạn ({overdue.length})</p>
+                {overdue.map(t => <TaskRow key={t.id} task={t} isOv={true} />)}
+              </div>
+            )}
+            {upcoming.length > 0 && (
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#F15A22', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sắp đến hạn ({upcoming.length})</p>
+                {upcoming.map(t => <TaskRow key={t.id} task={t} isOv={false} />)}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── HIỆU SUẤT NHÂN VIÊN (chỉ admin + manager) ────────────────── */}
+      {role !== 'employee' && tasks.length > 0 && (() => {
+        const visibleEmpIds = role === 'admin'
+          ? employees.map(e => e.id)
+          : [myEmployeeId, ...mySubordinateIds].filter(Boolean);
+
+        const rows = visibleEmpIds.map(eid => {
+          const emp      = employees.find(e => e.id === eid);
+          if (!emp) return null;
+          const empTasks = tasks.filter(t => t.nhan_vien_id === eid);
+          const total    = empTasks.length;
+          if (total === 0) return null;
+          const done     = empTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
+          const ovd      = empTasks.filter(isOverdue).length;
+          const rate     = Math.round((done / total) * 100);
+          return { emp, total, done, ovd, rate };
+        }).filter(Boolean).sort((a, b) => a.rate - b.rate).slice(0, 8);
+
+        if (rows.length === 0) return null;
+
+        return (
+          <div style={{ ...card, padding: isMobile ? '14px' : '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              {sectionIcon('#F0FDF4', <ClipboardList size={16} color="#059669" />)}
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: DS.text1, margin: 0 }}>Hiệu suất nhân viên</h3>
+              {onNavigate && (
+                <button onClick={() => onNavigate('performance')} style={{ marginLeft: 'auto', fontSize: 12, color: '#F15A22', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 500 }}>
+                  Xem chi tiết →
+                </button>
+              )}
+            </div>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 480 }}>
+                <thead>
+                  <tr style={{ borderBottom: '0.5px solid #e5e7eb' }}>
+                    {['Nhân viên', 'Tổng', 'Hoàn thành', 'Quá hạn', 'Tỷ lệ'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 10px', fontSize: 11, fontWeight: 600, color: '#6B7280', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({ emp, total, done, ovd, rate }) => {
+                    const barColor = rate >= 80 ? '#059669' : rate >= 50 ? '#F15A22' : '#ef4444';
+                    return (
+                      <tr key={emp.id} style={{ borderBottom: '0.5px solid #f9fafb' }}>
+                        <td style={{ padding: '9px 10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#F15A22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>{(emp.ho_ten || '?').charAt(0)}</span>
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: '#111827', whiteSpace: 'nowrap' }}>{emp.ho_ten}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '9px 10px', fontSize: 13, color: '#374151', fontWeight: 500 }}>{total}</td>
+                        <td style={{ padding: '9px 10px', fontSize: 13, color: '#059669', fontWeight: 600 }}>{done}</td>
+                        <td style={{ padding: '9px 10px', fontSize: 13, color: ovd > 0 ? '#ef4444' : '#9CA3AF', fontWeight: ovd > 0 ? 600 : 400 }}>{ovd > 0 ? ovd : '—'}</td>
+                        <td style={{ padding: '9px 10px', minWidth: 110 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            <div style={{ flex: 1, height: 5, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden' }}>
+                              <div style={{ width: `${rate}%`, height: '100%', background: barColor, borderRadius: 99 }} />
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{rate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: isMobile ? '12px' : '16px' }}>

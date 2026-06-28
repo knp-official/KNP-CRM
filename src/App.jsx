@@ -357,7 +357,13 @@ function AppContent() {
             />
             <main style={{ flex: 1, overflowY: 'auto' }}>
               {tab === 'dashboard' && (
-                <Dashboard customers={customers} contacts={contacts} employees={employees} />
+                <Dashboard
+                  customers={customers} contacts={contacts} employees={employees}
+                  tasks={tasks} role={role}
+                  myEmployeeId={myEmployeeId} myEmployee={myEmployee}
+                  mySubordinateIds={mySubordinateIds}
+                  onNavigate={setActiveTab}
+                />
               )}
               {tab === 'customers' && (
                 <CustomersPage

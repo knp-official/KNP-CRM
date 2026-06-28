@@ -1,35 +1,48 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
-    if (!currentUser?.uid) return;
+    if (!currentUser?.uid) { setLoading(false); return; }
 
     let q;
     if (vaiTro === 'Admin') {
-      q = query(collection(db, 'leave_requests'), orderBy('created_at', 'desc'));
+      // Không dùng orderBy → không cần composite index
+      q = query(collection(db, 'leave_requests'));
     } else if (vaiTro === 'Quản lý') {
       q = query(
         collection(db, 'leave_requests'),
-        where('phong_ban', '==', phongBan),
-        orderBy('created_at', 'desc')
+        where('phong_ban', '==', phongBan || '__none__')
       );
     } else {
       q = query(
         collection(db, 'leave_requests'),
-        where('nguoi_xin_id', '==', currentUser.uid),
-        orderBy('created_at', 'desc')
+        where('nguoi_xin_id', '==', currentUser.uid)
       );
     }
 
-    const unsub = onSnapshot(q, snap => {
-      setLeaveRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }, () => setLoading(false));
+    const unsub = onSnapshot(
+      q,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Sort client-side theo thời gian tạo mới nhất
+        data.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+        setLeaveRequests(data);
+        setLoading(false);
+        setError(null);
+      },
+      err => {
+        console.error('[useLeaveRequests] Firestore error:', err.code, err.message);
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
     return unsub;
   }, [currentUser?.uid, vaiTro, phongBan]);
 
@@ -56,7 +69,7 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
     return docRef;
   };
 
-  const duyetDon = async (id, nguoiDuyetTen, nguoiXinId, nguoiXinTen) => {
+  const duyetDon = async (id, nguoiDuyetTen, nguoiXinId) => {
     await updateDoc(doc(db, 'leave_requests', id), {
       trang_thai: 'da_duyet',
       nguoi_duyet_id: currentUser.uid,
@@ -99,7 +112,7 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
     }
   };
 
-  return { leaveRequests, loading, taoDoXinNghi, duyetDon, tuChoiDon };
+  return { leaveRequests, loading, error, taoDoXinNghi, duyetDon, tuChoiDon };
 };
 
 export default useLeaveRequests;

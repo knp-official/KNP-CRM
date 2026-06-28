@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Wallet, Edit2, Trash2, X, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import Modal from '../components/Modal';
 import { TRANG_THAI_CN } from '../data/sampleData';
@@ -81,6 +81,14 @@ function DebtForm({ initial, customers, onSubmit, onCancel }) {
 }
 
 export default function DebtsPage({ debts, customers, onAdd, onUpdate, onDelete }) {
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const h = () => setWinWidth(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isMobile = winWidth < 768;
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCustomer, setFilterCustomer] = useState('');
@@ -115,7 +123,7 @@ export default function DebtsPage({ debts, customers, onAdd, onUpdate, onDelete 
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
         {[
           { label: 'Tổng phải thu', value: fmt(totalDebt) + ' đ', cls: 'text-slate-900' },
           { label: 'Đã thu', value: fmt(totalPaid) + ' đ', cls: 'text-emerald-600' },

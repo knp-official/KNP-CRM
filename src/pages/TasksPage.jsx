@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, ClipboardList, Calendar, User, Building2, Edit2, Trash2, X, AlertCircle, CheckCircle2, Clock, Circle, Zap } from 'lucide-react';
 import Modal from '../components/Modal';
 import { TRANG_THAI_TASK, UU_TIEN, PHONG_BAN } from '../data/sampleData';
@@ -215,6 +215,14 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
 }
 
 export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId }) {
+  const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const h = () => setWinWidth(window.innerWidth);
+    window.addEventListener('resize', h);
+    return () => window.removeEventListener('resize', h);
+  }, []);
+  const isMobile = winWidth < 768;
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmp, setFilterEmp] = useState('');
@@ -252,7 +260,7 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
       </div>
 
       {/* Status chips */}
-      <div className="grid grid-cols-4 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
         {stats.map(({ label, count }) => {
           const { cls, icon: Icon } = taskStatusStyle[label];
           return (

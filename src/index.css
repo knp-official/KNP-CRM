@@ -121,3 +121,22 @@ button, [role="button"] { touch-action: manipulation; }
     overflow-y: auto;
   }
 }
+
+/* ── CSS backup: responsive grid (kể cả khi JS chưa load) ──────────────────── */
+@media (max-width: 767px) {
+  .knp-grid-auto {
+    grid-template-columns: 1fr !important;
+  }
+  .knp-grid-2col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .knp-content-area {
+    padding: 12px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .knp-grid-auto {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

@@ -230,12 +230,11 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
     window.addEventListener('resize', h);
     return () => window.removeEventListener('resize', h);
   }, []);
-  // viewMode từ App (giả lập) ưu tiên hơn window width thật
-  const cols = viewMode === 'mobile' ? '1fr'
-    : viewMode === 'tablet' ? '1fr 1fr'
-    : viewMode === 'desktop' ? 'repeat(3, 1fr)'
-    : winWidth < 768 ? '1fr' : winWidth < 1024 ? '1fr 1fr' : 'repeat(3, 1fr)';
-  const gridCols = cols;
+  // Chỉ dùng viewMode giả lập khi đang trên desktop thật (>= 1024px)
+  const isRealDesktop = winWidth >= 1024;
+  const gridCols = isRealDesktop
+    ? (viewMode === 'mobile' ? '1fr' : viewMode === 'tablet' ? '1fr 1fr' : 'repeat(3, 1fr)')
+    : (winWidth < 768 ? '1fr' : '1fr 1fr');
 
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();

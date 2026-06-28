@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, Building2, UserCheck, ClipboardList, FileText, Wallet, TrendingUp, LogOut } from 'lucide-react';
+import { BarChart3, Building2, UserCheck, ClipboardList, TrendingUp, FileText, Wallet, BarChart2, LogOut } from 'lucide-react';
 
 const NAV_GROUPS = [
-  [{ id: 'dashboard', label: 'Tổng quan',  icon: BarChart3 }],
-  [{ id: 'customers', label: 'Khách hàng', icon: Building2 }],
+  [{ id: 'dashboard', label: 'Tổng quan', icon: BarChart3 }],
   [
-    { id: 'employees', label: 'Nhân sự',   icon: UserCheck },
-    { id: 'tasks',     label: 'Giao việc', icon: ClipboardList },
+    { id: 'employees',   label: 'Nhân sự',   icon: UserCheck },
+    { id: 'tasks',       label: 'Giao việc', icon: ClipboardList },
+    { id: 'performance', label: 'Hiệu suất', icon: TrendingUp },
   ],
   [
-    { id: 'quotes', label: 'Báo giá', icon: FileText },
-    { id: 'debts',  label: 'Công nợ', icon: Wallet },
+    { id: 'customers', label: 'Khách hàng', icon: Building2 },
+    { id: 'quotes',    label: 'Báo giá',    icon: FileText },
+    { id: 'debts',     label: 'Công nợ',    icon: Wallet },
   ],
-  [{ id: 'reports', label: 'Báo cáo', icon: TrendingUp }],
+  [{ id: 'reports', label: 'Báo cáo', icon: BarChart2 }],
 ];
 
 const ROLE_LABEL  = { admin: 'Admin', manager: 'Quản lý', employee: 'Nhân viên' };

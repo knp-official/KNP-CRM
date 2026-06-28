@@ -16,6 +16,7 @@ import TasksPage from './pages/TasksPage';
 import QuotesPage from './pages/QuotesPage';
 import DebtsPage from './pages/DebtsPage';
 import ReportsPage from './pages/ReportsPage';
+import PerformancePage from './pages/PerformancePage';
 import { useCustomers } from './hooks/useCustomers';
 import { useContacts } from './hooks/useContacts';
 import { useEmployees } from './hooks/useEmployees';
@@ -32,6 +33,7 @@ const PERMS = {
     tasks:     { add: true,  edit: true,  del: true  },
     quotes:    { add: true,  edit: true,  del: true  },
     debts:     { view: true, add: true,  edit: true,  del: true  },
+    performance: { view: true },
     reports:   { view: true },
   },
   manager: {
@@ -41,6 +43,7 @@ const PERMS = {
     tasks:     { add: true,  edit: true,  del: false },
     quotes:    { add: true,  edit: true,  del: false },
     debts:     { view: true, add: false, edit: false, del: false },
+    performance: { view: true },
     reports:   { view: true },
   },
   employee: {
@@ -50,6 +53,7 @@ const PERMS = {
     tasks:     { add: true,  edit: true,  del: false },
     quotes:    { add: false, edit: false, del: false },
     debts:     { view: false },
+    performance: { view: false },
     reports:   { view: true },  // hiển thị PersonalReportView
   },
 };
@@ -400,6 +404,11 @@ function AppContent() {
                       onDelete={g(deleteDebt, p.debts.del)}
                     />
                   : <AccessDenied module="Công nợ" />
+              )}
+              {tab === 'performance' && (
+                p.performance?.view
+                  ? <PerformancePage tasks={tasks} employees={employees} />
+                  : <AccessDenied module="Hiệu suất" />
               )}
               {tab === 'reports' && (
                 <ReportsPage

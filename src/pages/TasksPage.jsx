@@ -259,8 +259,21 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
         </button>
       </div>
 
-      {/* Status chips */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+      {/* Status chips — Tất cả + 4 trạng thái */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '12px' }}>
+        {/* Chip Tất cả */}
+        <button
+          onClick={() => setFilterStatus('')}
+          className={`p-3 rounded-xl border-2 text-left transition-all ${filterStatus === '' ? 'border-orange-400 bg-orange-50' : 'bg-white border-slate-200 hover:border-orange-200'}`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <ClipboardList size={14} className="text-slate-500" />
+            <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Tất cả</span>
+          </div>
+          <p className="text-2xl font-bold text-slate-900">{tasks.length}</p>
+        </button>
+
+        {/* 4 chips trạng thái */}
         {stats.map(({ label, count }) => {
           const { cls, icon: Icon } = taskStatusStyle[label];
           return (

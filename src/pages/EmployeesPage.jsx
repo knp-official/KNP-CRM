@@ -34,32 +34,7 @@ const ROLE_STYLE = {
   'Nhân viên': { bg: '#F1EFE8', color: '#444441' },
 };
 
-const SORT_OPTIONS = [
-  { value: 'cap_bac',       label: 'Cấp bậc' },
-  { value: 'ten_az',        label: 'Tên A → Z' },
-  { value: 'ten_za',        label: 'Tên Z → A' },
-  { value: 'chucvu_az',     label: 'Chức vụ A → Z' },
-  { value: 'chucvu_za',     label: 'Chức vụ Z → A' },
-  { value: 'vao_lam_moi',   label: 'Ngày vào làm mới nhất' },
-  { value: 'vao_lam_cu',    label: 'Ngày vào làm cũ nhất' },
-  { value: 'tuoi_lon',      label: 'Tuổi lớn nhất' },
-  { value: 'tuoi_nho',      label: 'Tuổi nhỏ nhất' },
-  { value: 'sinh_nhat_gan', label: 'Sinh nhật gần nhất' },
-];
-
 const ROLE_ORDER = { 'Admin': 1, 'Quản lý': 2, 'Nhân viên': 3 };
-const TITLE_RANK = [
-  'tổng giám đốc', 'giám đốc', 'phó giám đốc',
-  'trưởng phòng', 'quản đốc', 'kế toán trưởng',
-  'phó phòng', 'tổ trưởng',
-  'nhân viên', 'chuyên viên', 'kỹ thuật viên',
-  'thực tập sinh', 'lái xe', 'công nhân',
-];
-function getTitleRank(chucVu = '') {
-  const lower = chucVu.toLowerCase();
-  const idx = TITLE_RANK.findIndex(t => lower.includes(t));
-  return idx === -1 ? 50 : idx;
-}
 
 function calcAge(ngay_sinh) {
   if (!ngay_sinh) return null;
@@ -78,25 +53,25 @@ function daysUntilBirthday(ngay_sinh) {
 }
 
 function applySort(list, sort) {
-  const cmp = (a, b, key) => (a[key] || '').localeCompare(b[key] || '', 'vi');
+  const today = new Date();
+  const getNextBirthday = (dateStr) => {
+    if (!dateStr) return 999999;
+    const d = new Date(dateStr);
+    const next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+    if (next < today) next.setFullYear(today.getFullYear() + 1);
+    return next - today;
+  };
   switch (sort) {
-    case 'cap_bac': return [...list].sort((a, b) => {
-      const rA = ROLE_ORDER[a.vai_tro] ?? 3, rB = ROLE_ORDER[b.vai_tro] ?? 3;
+    case 'vai_tro': return [...list].sort((a, b) => {
+      const rA = ROLE_ORDER[a.vai_tro] ?? 9, rB = ROLE_ORDER[b.vai_tro] ?? 9;
       if (rA !== rB) return rA - rB;
-      const tA = getTitleRank(a.chuc_vu), tB = getTitleRank(b.chuc_vu);
-      if (tA !== tB) return tA - tB;
       return (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi');
     });
-    case 'ten_az':        return [...list].sort((a, b) => cmp(a, b, 'ho_ten'));
-    case 'ten_za':        return [...list].sort((a, b) => cmp(b, a, 'ho_ten'));
-    case 'chucvu_az':     return [...list].sort((a, b) => cmp(a, b, 'chuc_vu'));
-    case 'chucvu_za':     return [...list].sort((a, b) => cmp(b, a, 'chuc_vu'));
-    case 'vao_lam_moi':   return [...list].sort((a, b) => (b.ngay_vao_lam || '').localeCompare(a.ngay_vao_lam || ''));
-    case 'vao_lam_cu':    return [...list].sort((a, b) => (a.ngay_vao_lam || '').localeCompare(b.ngay_vao_lam || ''));
-    case 'tuoi_lon':      return [...list].sort((a, b) => (a.ngay_sinh || '9999').localeCompare(b.ngay_sinh || '9999'));
-    case 'tuoi_nho':      return [...list].sort((a, b) => (b.ngay_sinh || '0000').localeCompare(a.ngay_sinh || '0000'));
-    case 'sinh_nhat_gan': return [...list].sort((a, b) => daysUntilBirthday(a.ngay_sinh) - daysUntilBirthday(b.ngay_sinh));
-    default:              return list;
+    case 'ten':         return [...list].sort((a, b) => (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi'));
+    case 'sinh_nhat':   return [...list].sort((a, b) => getNextBirthday(a.ngay_sinh) - getNextBirthday(b.ngay_sinh));
+    case 'vao_lam_lau': return [...list].sort((a, b) => new Date(a.ngay_vao_lam || 0) - new Date(b.ngay_vao_lam || 0));
+    case 'vao_lam_moi': return [...list].sort((a, b) => new Date(b.ngay_vao_lam || 0) - new Date(a.ngay_vao_lam || 0));
+    default:            return list;
   }
 }
 
@@ -239,7 +214,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false
 export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee, onNavigate, viewMode }) {
   const [search, setSearch]         = useState('');
   const [filterPB, setFilterPB]     = useState('');
-  const [sort, setSort]             = useState('cap_bac');
+  const [sort, setSort]             = useState('vai_tro');
   const [showForm, setShowForm]     = useState(false);
   const [editing, setEditing]       = useState(null);
   const [viewing, setViewing]       = useState(null);
@@ -284,16 +259,17 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
           <p style={{ fontSize: '14px', color: TEXT2, margin: 0 }}>{employees.filter(e => e.trang_thai === 'Đang làm việc').length} đang làm việc</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ position: 'relative' }}>
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              style={{ ...inputS, width: 'auto', paddingRight: '32px', appearance: 'none', cursor: 'pointer', fontSize: '13px' }}
-            >
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: TEXT2, pointerEvents: 'none' }} />
-          </div>
+          <select
+            value={sort}
+            onChange={e => setSort(e.target.value)}
+            style={{ border: '0.5px solid #e5e7eb', borderRadius: 6, padding: '6px 12px', fontSize: 13, color: '#374151', background: '#fff', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="vai_tro">Vai trò trong hệ thống</option>
+            <option value="ten">Tên</option>
+            <option value="sinh_nhat">Ngày sinh nhật</option>
+            <option value="vao_lam_lau">Ngày vào làm lâu nhất</option>
+            <option value="vao_lam_moi">Ngày vào làm mới nhất</option>
+          </select>
           {onAdd && (
             <button
               onClick={() => setShowForm(true)}

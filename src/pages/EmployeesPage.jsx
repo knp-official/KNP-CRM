@@ -52,6 +52,17 @@ function daysUntilBirthday(ngay_sinh) {
   return Math.round((next - today) / 86400000);
 }
 
+function parseDate(val) {
+  if (!val) return new Date(0);
+  if (val?.toDate) return val.toDate();
+  if (val?.seconds) return new Date(val.seconds * 1000);
+  if (typeof val === 'string') {
+    if (val.includes('T')) return new Date(val);
+    return new Date(val + 'T00:00:00');
+  }
+  return new Date(val);
+}
+
 function applySort(list, sort) {
   const today = new Date();
   const getNextBirthday = (dateStr) => {
@@ -69,8 +80,8 @@ function applySort(list, sort) {
     });
     case 'ten':         return [...list].sort((a, b) => (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi'));
     case 'sinh_nhat':   return [...list].sort((a, b) => getNextBirthday(a.ngay_sinh) - getNextBirthday(b.ngay_sinh));
-    case 'vao_lam_lau': return [...list].sort((a, b) => new Date(a.ngay_vao_lam || 0) - new Date(b.ngay_vao_lam || 0));
-    case 'vao_lam_moi': return [...list].sort((a, b) => new Date(b.ngay_vao_lam || 0) - new Date(a.ngay_vao_lam || 0));
+    case 'vao_lam_lau': return [...list].sort((a, b) => parseDate(a.ngay_vao_lam) - parseDate(b.ngay_vao_lam));
+    case 'vao_lam_moi': return [...list].sort((a, b) => parseDate(b.ngay_vao_lam) - parseDate(a.ngay_vao_lam));
     default:            return list;
   }
 }

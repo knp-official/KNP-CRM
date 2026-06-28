@@ -66,8 +66,7 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
     : null;
 
   const nguoiDuyetList = employees.filter(e =>
-    e.vai_tro === 'Admin' || e.vai_tro === 'Quản lý' ||
-    e.vaiTro  === 'Admin' || e.vaiTro  === 'Quản lý'
+    e.vai_tro === 'Admin' || e.vaiTro === 'Admin'
   );
 
   const [loai, setLoai]   = useState('ngay');
@@ -309,12 +308,8 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const [showTaoModal, setShowTaoModal] = useState(false);
   const [tuChoiTarget, setTuChoiTarget] = useState(null); // { id, nguoi_xin_id }
 
-  const isAdminOrManager = vaiTro === 'Admin' || vaiTro === 'Quản lý';
-  const coTheeDuyetDon = (don) => {
-    if (vaiTro === 'Admin') return true;
-    if (vaiTro === 'Quản lý') return don.phong_ban === phongBan;
-    return false;
-  };
+  const isAdminOrManager = vaiTro === 'Admin';
+  const coTheeDuyetDon = () => vaiTro === 'Admin';
 
   // Filters
   const [filterStatus,  setFilterStatus]  = useState('all');

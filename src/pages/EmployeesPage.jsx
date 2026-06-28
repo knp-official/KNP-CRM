@@ -35,6 +35,7 @@ const ROLE_STYLE = {
 };
 
 const SORT_OPTIONS = [
+  { value: 'cap_bac',       label: 'Cấp bậc' },
   { value: 'ten_az',        label: 'Tên A → Z' },
   { value: 'ten_za',        label: 'Tên Z → A' },
   { value: 'chucvu_az',     label: 'Chức vụ A → Z' },
@@ -45,6 +46,20 @@ const SORT_OPTIONS = [
   { value: 'tuoi_nho',      label: 'Tuổi nhỏ nhất' },
   { value: 'sinh_nhat_gan', label: 'Sinh nhật gần nhất' },
 ];
+
+const ROLE_ORDER = { 'Admin': 1, 'Quản lý': 2, 'Nhân viên': 3 };
+const TITLE_RANK = [
+  'tổng giám đốc', 'giám đốc', 'phó giám đốc',
+  'trưởng phòng', 'quản đốc', 'kế toán trưởng',
+  'phó phòng', 'tổ trưởng',
+  'nhân viên', 'chuyên viên', 'kỹ thuật viên',
+  'thực tập sinh', 'lái xe', 'công nhân',
+];
+function getTitleRank(chucVu = '') {
+  const lower = chucVu.toLowerCase();
+  const idx = TITLE_RANK.findIndex(t => lower.includes(t));
+  return idx === -1 ? 50 : idx;
+}
 
 function calcAge(ngay_sinh) {
   if (!ngay_sinh) return null;
@@ -65,6 +80,13 @@ function daysUntilBirthday(ngay_sinh) {
 function applySort(list, sort) {
   const cmp = (a, b, key) => (a[key] || '').localeCompare(b[key] || '', 'vi');
   switch (sort) {
+    case 'cap_bac': return [...list].sort((a, b) => {
+      const rA = ROLE_ORDER[a.vai_tro] ?? 3, rB = ROLE_ORDER[b.vai_tro] ?? 3;
+      if (rA !== rB) return rA - rB;
+      const tA = getTitleRank(a.chuc_vu), tB = getTitleRank(b.chuc_vu);
+      if (tA !== tB) return tA - tB;
+      return (a.ho_ten || '').localeCompare(b.ho_ten || '', 'vi');
+    });
     case 'ten_az':        return [...list].sort((a, b) => cmp(a, b, 'ho_ten'));
     case 'ten_za':        return [...list].sort((a, b) => cmp(b, a, 'ho_ten'));
     case 'chucvu_az':     return [...list].sort((a, b) => cmp(a, b, 'chuc_vu'));
@@ -217,7 +239,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false
 export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, myEmployeeId, isEmployee, onNavigate, viewMode }) {
   const [search, setSearch]         = useState('');
   const [filterPB, setFilterPB]     = useState('');
-  const [sort, setSort]             = useState('ten_az');
+  const [sort, setSort]             = useState('cap_bac');
   const [showForm, setShowForm]     = useState(false);
   const [editing, setEditing]       = useState(null);
   const [viewing, setViewing]       = useState(null);

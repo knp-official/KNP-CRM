@@ -138,10 +138,17 @@ function AppContent() {
   const myEmployee   = employees.find(e => e.uid === currentUserUid);
   const myEmployeeId = myEmployee?.id;
 
-  // Subordinates của manager: nhân viên có quan_ly_truc_tiep_id trỏ đến myEmployeeId
-  const mySubordinateIds = myEmployeeId
-    ? employees.filter(e => e.quan_ly_truc_tiep_id === myEmployeeId).map(e => e.id)
-    : [];
+  // Manager thấy toàn bộ nhân viên cùng phòng ban (kể cả không có quan_ly_truc_tiep_id)
+  // Employee/admin: dùng quan_ly_truc_tiep_id như cũ (không ảnh hưởng vì useTasks xử lý riêng)
+  const mySubordinateIds = (() => {
+    if (!myEmployeeId) return [];
+    if (role === 'manager' && myEmployee?.phong_ban) {
+      return employees
+        .filter(e => e.id !== myEmployeeId && e.phong_ban === myEmployee.phong_ban)
+        .map(e => e.id);
+    }
+    return employees.filter(e => e.quan_ly_truc_tiep_id === myEmployeeId).map(e => e.id);
+  })();
 
   // useTasks nhận role để phân nhánh query ở tầng Firestore:
   // admin → fetch all | manager → mình + subordinates | employee → chỉ mình

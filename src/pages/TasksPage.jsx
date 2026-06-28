@@ -67,12 +67,23 @@ function defaultDeadline() {
   return toDatetimeLocal(Date.now() + 24 * 3600000);
 }
 
-// Task quá hạn = có deadline đã qua VÀ chưa hoàn thành
+// Task quá hạn = deadline đã qua VÀ chưa hoàn thành
 function isOverdue(task) {
-  if (task.trang_thai === 'Hoàn thành') return false;
-  if (!task.deadline) return false;
-  const d = new Date(task.deadline);
-  return !isNaN(d) && d < new Date();
+  const done = ['Hoàn thành', 'done', 'completed'];
+  if (done.includes(task.trang_thai || task.status || '')) return false;
+
+  // Thử tất cả tên field deadline phổ biến
+  const dl = task.deadline || task.han_chot || task.ngay_het_han
+          || task.due_date || task.dueDate || task.ngay_deadline;
+  if (!dl) return false;
+
+  // Handle Firestore Timestamp, Timestamp object, hoặc ISO string
+  let deadlineDate;
+  if (dl?.toDate) deadlineDate = dl.toDate();              // Firestore Timestamp
+  else if (dl?.seconds) deadlineDate = new Date(dl.seconds * 1000); // plain Timestamp obj
+  else deadlineDate = new Date(dl);                        // ISO string / number
+
+  return !isNaN(deadlineDate) && deadlineDate < new Date();
 }
 
 function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {

@@ -307,7 +307,12 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   );
 
   const [showTaoModal, setShowTaoModal] = useState(false);
-  const [tuChoiTarget, setTuChoiTarget] = useState(null); // { id, nguoi_xin_id }
+  const [tuChoiTarget, setTuChoiTarget] = useState(null);
+
+  const now = new Date();
+  const [thangFilter, setThangFilter] = useState(now.getMonth() + 1);
+  const [namFilter,   setNamFilter]   = useState(now.getFullYear());
+  const thangOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   const isAdminOrManager = vaiTro === 'Admin';
   const coTheeDuyetDon = () => vaiTro === 'Admin';
@@ -316,6 +321,50 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const [filterStatus,  setFilterStatus]  = useState('all');
   const [filterPhong,   setFilterPhong]   = useState('all');
   const [filterThang,   setFilterThang]   = useState('');
+
+  const tinhThoiGianNghi = (don) => {
+    if (don.trang_thai !== 'da_duyet') return { ngay: 0, buoi: 0, gio: 0 };
+    if (don.loai_nghi === 'ngay') {
+      const start = new Date((don.tu_ngay || don.ngay_bat_dau || '') + 'T00:00:00');
+      const end   = new Date((don.den_ngay || don.ngay_ket_thuc || don.tu_ngay || '') + 'T00:00:00');
+      const diff  = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      return { ngay: Math.max(1, diff), buoi: 0, gio: 0 };
+    }
+    if (don.loai_nghi === 'buoi') {
+      if (don.buoi === 'ca_ngay') return { ngay: 1, buoi: 0, gio: 0 };
+      return { ngay: 0, buoi: 1, gio: 0 };
+    }
+    if (don.loai_nghi === 'gio') {
+      const [h1, m1] = (don.gio_bat_dau || '00:00').split(':').map(Number);
+      const [h2, m2] = (don.gio_ket_thuc || '00:00').split(':').map(Number);
+      return { ngay: 0, buoi: 0, gio: Math.max(0, ((h2 * 60 + m2) - (h1 * 60 + m1)) / 60) };
+    }
+    return { ngay: 0, buoi: 0, gio: 0 };
+  };
+
+  const { thongKeList, donThangCount } = useMemo(() => {
+    const donThang = leaveRequests.filter(don => {
+      const ngay = don.tu_ngay || don.ngay || don.ngay_bat_dau || '';
+      if (!ngay) return false;
+      const d = new Date(ngay + 'T00:00:00');
+      return d.getMonth() + 1 === thangFilter && d.getFullYear() === namFilter;
+    });
+    const map = {};
+    donThang.forEach(don => {
+      const id  = don.nguoi_xin_id;
+      const ten = don.nguoi_xin_ten || 'Không rõ';
+      if (!map[id]) map[id] = { ten, tongNgay: 0, tongBuoi: 0, tongGio: 0, donList: [] };
+      const tg = tinhThoiGianNghi(don);
+      map[id].tongNgay += tg.ngay;
+      map[id].tongBuoi += tg.buoi;
+      map[id].tongGio  += tg.gio;
+      map[id].donList.push(don);
+    });
+    const list = Object.entries(map)
+      .map(([id, d]) => ({ id, ...d }))
+      .sort((a, b) => (b.tongNgay + b.tongBuoi / 2 + b.tongGio / 8) - (a.tongNgay + a.tongBuoi / 2 + a.tongGio / 8));
+    return { thongKeList: list, donThangCount: donThang.length };
+  }, [leaveRequests, thangFilter, namFilter]);
 
   const phongBanList = useMemo(() => {
     const set = new Set(leaveRequests.map(r => r.phong_ban).filter(Boolean));
@@ -387,6 +436,87 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
           <input type="month" style={selSty} value={filterThang} onChange={e => setFilterThang(e.target.value)} />
         )}
       </div>
+
+      {/* ── THỐNG KÊ NGHỈ PHÉP (chỉ Admin) ── */}
+      {vaiTro === 'Admin' && (
+        <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', marginBottom: '16px', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px' }}>📅</span>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: TEXT1 }}>Thống kê nghỉ phép</span>
+              {donThangCount > 0 && (
+                <span style={{ fontSize: '11px', background: '#F3F4F6', color: TEXT2, padding: '2px 8px', borderRadius: '10px', fontWeight: '500' }}>
+                  {donThangCount} đơn
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <select value={thangFilter} onChange={e => setThangFilter(Number(e.target.value))}
+                style={{ padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer' }}>
+                {thangOptions.map(t => <option key={t} value={t}>Tháng {t}</option>)}
+              </select>
+              <select value={namFilter} onChange={e => setNamFilter(Number(e.target.value))}
+                style={{ padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer' }}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {thongKeList.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>
+              Không có dữ liệu nghỉ phép tháng {thangFilter}/{namFilter}
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#F9FAFB' }}>
+                    {['Nhân viên', 'Nghỉ ngày', 'Nghỉ buổi', 'Nghỉ giờ', 'Quy đổi (ngày)', 'Số đơn'].map(h => (
+                      <th key={h} style={{ padding: '10px 16px', textAlign: h === 'Nhân viên' ? 'left' : 'center', fontWeight: '600', color: TEXT2, borderBottom: `1px solid ${BORDER}`, whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {thongKeList.map((nv, idx) => {
+                    const quyDoi = nv.tongNgay + nv.tongBuoi / 2 + nv.tongGio / 8;
+                    return (
+                      <tr key={nv.id} style={{ borderBottom: `1px solid #F3F4F6`, background: idx % 2 === 0 ? '#fff' : '#FAFAFA' }}>
+                        <td style={{ padding: '10px 16px', fontWeight: '500', color: TEXT1 }}>{nv.ten}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: nv.tongNgay > 0 ? '#DC2626' : TEXT2 }}>{nv.tongNgay > 0 ? `${nv.tongNgay} ngày` : '—'}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: nv.tongBuoi > 0 ? '#D97706' : TEXT2 }}>{nv.tongBuoi > 0 ? `${nv.tongBuoi} buổi` : '—'}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: nv.tongGio > 0 ? '#2563EB' : TEXT2 }}>{nv.tongGio > 0 ? `${nv.tongGio.toFixed(1)} giờ` : '—'}</td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                          <span style={{
+                            background: quyDoi >= 3 ? '#FEE2E2' : quyDoi >= 1 ? '#FEF3C7' : '#F0FDF4',
+                            color: quyDoi >= 3 ? '#DC2626' : quyDoi >= 1 ? '#D97706' : '#16A34A',
+                            padding: '2px 10px', borderRadius: '10px', fontWeight: '600', fontSize: '12px',
+                          }}>
+                            {quyDoi % 1 === 0 ? quyDoi : quyDoi.toFixed(1)} ngày
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 16px', textAlign: 'center', color: TEXT2 }}>{nv.donList.length}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: '#F9FAFB', borderTop: `1px solid ${BORDER}` }}>
+                    <td style={{ padding: '10px 16px', fontWeight: '700', color: TEXT1 }}>Tổng công ty</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: '600', color: TEXT1 }}>{thongKeList.reduce((s, nv) => s + nv.tongNgay, 0)} ngày</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: '600', color: TEXT1 }}>{thongKeList.reduce((s, nv) => s + nv.tongBuoi, 0)} buổi</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: '600', color: TEXT1 }}>{thongKeList.reduce((s, nv) => s + nv.tongGio, 0).toFixed(1)} giờ</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: '600', color: TEXT1 }}>{thongKeList.reduce((s, nv) => s + nv.tongNgay + nv.tongBuoi / 2 + nv.tongGio / 8, 0).toFixed(1)} ngày</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'center', fontWeight: '600', color: TEXT1 }}>{thongKeList.reduce((s, nv) => s + nv.donList.length, 0)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+          <div style={{ padding: '8px 16px', background: '#F0F9FF', borderTop: `1px solid ${BORDER}`, fontSize: '11px', color: TEXT2 }}>
+            * Quy đổi: 1 ngày = 2 buổi = 8 giờ · Chỉ tính đơn đã được duyệt
+          </div>
+        </div>
+      )}
 
       {/* List */}
       {loading ? (

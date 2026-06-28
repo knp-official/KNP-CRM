@@ -67,6 +67,14 @@ function defaultDeadline() {
   return toDatetimeLocal(Date.now() + 24 * 3600000);
 }
 
+// Task quá hạn = có deadline đã qua VÀ chưa hoàn thành
+function isOverdue(task) {
+  if (task.trang_thai === 'Hoàn thành') return false;
+  if (!task.deadline) return false;
+  const d = new Date(task.deadline);
+  return !isNaN(d) && d < new Date();
+}
+
 function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
   const empty = {
     tieu_de: '', mo_ta: '', khach_hang_id: '', nhan_vien_id: '',
@@ -235,13 +243,21 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
   const filtered = tasks.filter(t => {
     const q = search.toLowerCase();
     const emp = employees.find(e => e.id === t.nhan_vien_id);
+    const matchStatus = !filterStatus
+      || (filterStatus === 'Quá hạn' ? isOverdue(t) : t.trang_thai === filterStatus);
     return (!q || t.tieu_de.toLowerCase().includes(q))
-      && (!filterStatus || t.trang_thai === filterStatus)
+      && matchStatus
       && (!filterEmp || t.nhan_vien_id === filterEmp)
       && (!filterPB || emp?.phong_ban === filterPB);
   });
 
-  const stats = TRANG_THAI_TASK.map(s => ({ label: s, count: tasks.filter(t => t.trang_thai === s).length }));
+  // 'Quá hạn' đếm theo deadline thực tế, các trạng thái khác đếm theo trang_thai
+  const stats = TRANG_THAI_TASK.map(s => ({
+    label: s,
+    count: s === 'Quá hạn'
+      ? tasks.filter(isOverdue).length
+      : tasks.filter(t => t.trang_thai === s).length,
+  }));
 
   function getEmployee(id) { return employees.find(e => e.id === id); }
   function getCustomer(id) { return customers.find(c => c.id === id); }

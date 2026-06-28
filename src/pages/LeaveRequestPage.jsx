@@ -65,7 +65,10 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
     ? employees.find(e => e.id === myEmp.quan_ly_id)
     : null;
 
-  const isAdmin = currentUser?.vaiTro === 'Admin';
+  const nguoiDuyetList = employees.filter(e =>
+    e.vai_tro === 'Admin' || e.vai_tro === 'Quản lý' ||
+    e.vaiTro  === 'Admin' || e.vaiTro  === 'Quản lý'
+  );
 
   const [loai, setLoai]   = useState('ngay');
   const [form, setForm]   = useState({
@@ -212,26 +215,21 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
           {/* Người duyệt */}
           <div>
             <label style={lbl}>Người duyệt</label>
-            {isAdmin ? (
-              <select style={{ ...inp, appearance: 'none' }}
-                value={form.nguoi_duyet_id}
-                onChange={e => {
-                  const emp = employees.find(x => x.id === e.target.value);
-                  set('nguoi_duyet_id', e.target.value);
-                  set('nguoi_duyet_ten', emp?.ho_ten || '');
-                }}
-              >
-                <option value="">-- Chọn người duyệt --</option>
-                {employees.filter(e => e.vai_tro === 'Admin' || e.vai_tro === 'Quản lý').map(e => (
-                  <option key={e.id} value={e.id}>{e.ho_ten}</option>
-                ))}
-              </select>
-            ) : (
-              <input style={{ ...inp, background: BG, color: TEXT2 }}
-                value={form.nguoi_duyet_ten || '(Chưa có quản lý)'}
-                readOnly
-              />
-            )}
+            <select style={{ ...inp, appearance: 'none' }}
+              value={form.nguoi_duyet_id}
+              onChange={e => {
+                const emp = nguoiDuyetList.find(x => x.id === e.target.value);
+                set('nguoi_duyet_id', e.target.value);
+                set('nguoi_duyet_ten', emp?.ho_ten || '');
+              }}
+            >
+              <option value="">-- Chọn người duyệt --</option>
+              {nguoiDuyetList.map(e => (
+                <option key={e.id} value={e.id}>
+                  {e.ho_ten} — {e.chuc_vu || e.vai_tro || e.vaiTro || ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           {err && <p style={{ color: '#EF4444', fontSize: '13px', margin: 0 }}>{err}</p>}

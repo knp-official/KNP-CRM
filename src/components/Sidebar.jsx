@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { BarChart3, Building2, UserCheck, ClipboardList, TrendingUp, FileText, Wallet, BarChart2, LogOut } from 'lucide-react';
+import { BarChart3, Building2, UserCheck, ClipboardList, TrendingUp, FileText, Wallet, BarChart2, LogOut, CalendarOff } from 'lucide-react';
 
 const NAV_GROUPS = [
   [{ id: 'dashboard', label: 'Tổng quan', icon: BarChart3 }],
   [
-    { id: 'employees',   label: 'Nhân sự',   icon: UserCheck },
-    { id: 'tasks',       label: 'Giao việc', icon: ClipboardList },
-    { id: 'performance', label: 'Hiệu suất', icon: TrendingUp },
+    { id: 'employees',   label: 'Nhân sự',     icon: UserCheck },
+    { id: 'tasks',       label: 'Giao việc',   icon: ClipboardList },
+    { id: 'leave',       label: 'Xin nghỉ phép', icon: CalendarOff },
+    { id: 'performance', label: 'Hiệu suất',   icon: TrendingUp },
   ],
   [
     { id: 'customers', label: 'Khách hàng', icon: Building2 },

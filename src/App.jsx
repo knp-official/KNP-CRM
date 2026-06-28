@@ -17,6 +17,7 @@ import QuotesPage from './pages/QuotesPage';
 import DebtsPage from './pages/DebtsPage';
 import ReportsPage from './pages/ReportsPage';
 import PerformancePage from './pages/PerformancePage';
+import LeaveRequestPage from './pages/LeaveRequestPage';
 import { useCustomers } from './hooks/useCustomers';
 import { useContacts } from './hooks/useContacts';
 import { useEmployees } from './hooks/useEmployees';
@@ -420,6 +421,13 @@ function AppContent() {
                       onDelete={g(deleteDebt, p.debts.del)}
                     />
                   : <AccessDenied module="Công nợ" />
+              )}
+              {tab === 'leave' && (
+                <LeaveRequestPage
+                  currentUser={{ uid: currentUserUid, email: user?.email, vaiTro: userDoc?.vaiTro }}
+                  vaiTro={userDoc?.vaiTro || 'employee'}
+                  employees={employees}
+                />
               )}
               {tab === 'performance' && (
                 p.performance?.view

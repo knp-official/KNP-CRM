@@ -55,11 +55,15 @@ export default function DrawerMenu({ isOpen, onClose, activeTab, onTabChange, us
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, background: '#F15A22', borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0,
-            }}>KNP</div>
+            <div
+              onClick={() => window.location.reload()}
+              title="Tải lại trang"
+              style={{
+                width: 36, height: 36, background: '#F15A22', borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0,
+                cursor: 'pointer', userSelect: 'none',
+              }}>KNP</div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>Kim Ngân Phát</div>
               <div style={{ fontSize: 11, color: '#9ca3af' }}>Quản lý CRM</div>

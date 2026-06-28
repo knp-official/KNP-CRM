@@ -58,15 +58,20 @@ export default function Sidebar({ activeTab, onTabChange, userDoc, simulatedWidt
       }}
     >
       {/* Logo area */}
-      <div style={{
-        padding: collapsed ? '16px 12px' : '16px 16px 14px',
-        borderBottom: '0.5px solid #e5e7eb',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        overflow: 'hidden',
-        flexShrink: 0,
-      }}>
+      <div
+        onClick={() => window.location.reload()}
+        title="Tải lại trang"
+        style={{
+          padding: collapsed ? '16px 12px' : '16px 16px 14px',
+          borderBottom: '0.5px solid #e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          overflow: 'hidden',
+          flexShrink: 0,
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}>
         <div style={{
           width: '36px', height: '36px', backgroundColor: '#F15A22',
           borderRadius: '8px', display: 'flex', alignItems: 'center',

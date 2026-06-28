@@ -27,7 +27,10 @@ export default defineConfig({
           { src: 'logo512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
+      devOptions: { enabled: false },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {

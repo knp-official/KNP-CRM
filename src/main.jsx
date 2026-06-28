@@ -1,5 +1,5 @@
 // Force clear service worker cache khi có version mới
-const APP_VERSION = '1.0.7';
+const APP_VERSION = '1.0.8';
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     const storedVersion = localStorage.getItem('app_version');
@@ -9,6 +9,11 @@ if ('serviceWorker' in navigator) {
       if (storedVersion !== null) window.location.reload();
       else localStorage.setItem('app_version', APP_VERSION);
     }
+  });
+
+  // Auto-reload khi SW mới activate (skipWaiting + clientsClaim)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
   });
 }
 

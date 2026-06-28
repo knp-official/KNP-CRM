@@ -347,7 +347,11 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
       const ngay = don.tu_ngay || don.ngay || don.ngay_bat_dau || '';
       if (!ngay) return false;
       const d = new Date(ngay + 'T00:00:00');
-      return d.getMonth() + 1 === thangFilter && d.getFullYear() === namFilter;
+      const dungThang = d.getMonth() + 1 === thangFilter && d.getFullYear() === namFilter;
+      if (!dungThang) return false;
+      if (vaiTro === 'Admin') return true;
+      if (vaiTro === 'Quản lý') return don.nguoi_xin_id === currentUser?.uid || don.phong_ban === phongBan;
+      return don.nguoi_xin_id === currentUser?.uid;
     });
     const map = {};
     donThang.forEach(don => {
@@ -364,7 +368,7 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
       .map(([id, d]) => ({ id, ...d }))
       .sort((a, b) => (b.tongNgay + b.tongBuoi / 2 + b.tongGio / 8) - (a.tongNgay + a.tongBuoi / 2 + a.tongGio / 8));
     return { thongKeList: list, donThangCount: donThang.length };
-  }, [leaveRequests, thangFilter, namFilter]);
+  }, [leaveRequests, thangFilter, namFilter, vaiTro, currentUser?.uid, phongBan]);
 
   const phongBanList = useMemo(() => {
     const set = new Set(leaveRequests.map(r => r.phong_ban).filter(Boolean));
@@ -437,8 +441,8 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
         )}
       </div>
 
-      {/* ── THỐNG KÊ NGHỈ PHÉP (chỉ Admin) ── */}
-      {vaiTro === 'Admin' && (
+      {/* ── THỐNG KÊ NGHỈ PHÉP ── */}
+      {(
         <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', marginBottom: '16px', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

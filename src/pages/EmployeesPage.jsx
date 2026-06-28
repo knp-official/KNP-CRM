@@ -235,7 +235,10 @@ export default function EmployeesPage({ employees, onAdd, onUpdate, onDelete, my
 
   const filtered = employees.filter(e => {
     const q = search.toLowerCase();
-    return (!q || e.ho_ten.toLowerCase().includes(q) || e.chuc_vu?.toLowerCase().includes(q) || e.dien_thoai?.includes(q))
+    const name  = (e.ho_ten  || '').toLowerCase();
+    const title = (e.chuc_vu || '').toLowerCase();
+    const phone = (e.dien_thoai || '');
+    return (!q || name.includes(q) || title.includes(q) || phone.includes(q))
       && (!filterPB || e.phong_ban === filterPB);
   });
   const sorted = applySort(filtered, sort);

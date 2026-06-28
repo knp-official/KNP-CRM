@@ -86,9 +86,9 @@ function isOverdue(task) {
   return !isNaN(deadlineDate) && deadlineDate < new Date();
 }
 
-function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
+function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeId, onSubmit, onCancel }) {
   const empty = {
-    tieu_de: '', mo_ta: '', khach_hang_id: '', nhan_vien_id: '',
+    tieu_de: '', mo_ta: '', khach_hang_id: '', nhan_vien_id: lockedAssigneeId || '',
     deadline: defaultDeadline(), trang_thai: 'Chưa làm', uu_tien: 'Trung bình',
   };
   const [form, setForm] = useState(initial
@@ -131,9 +131,15 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={labelCls}>Giao cho</label>
-          <select className={inputCls} value={form.nhan_vien_id} onChange={e => set('nhan_vien_id', e.target.value)}>
+          <select
+            className={inputCls}
+            value={form.nhan_vien_id}
+            onChange={e => set('nhan_vien_id', e.target.value)}
+            disabled={!!lockedAssigneeId}
+            style={lockedAssigneeId ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}}
+          >
             <option value="">-- Chọn nhân viên --</option>
-            {employees.filter(e => e.trang_thai === 'Đang làm việc').map(e =>
+            {(assigneeList || employees).filter(e => e.trang_thai === 'Đang làm việc').map(e =>
               <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
           </select>
         </div>
@@ -233,7 +239,7 @@ function TaskForm({ initial, customers, employees, onSubmit, onCancel }) {
   );
 }
 
-export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId }) {
+export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate, onDelete, myEmployeeId, myEmployee, mySubordinateIds = [], role = 'admin' }) {
   const [winWidth, setWinWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   useEffect(() => {
     const h = () => setWinWidth(window.innerWidth);
@@ -241,6 +247,19 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
     return () => window.removeEventListener('resize', h);
   }, []);
   const isMobile = winWidth < 768;
+  const isEmployee = role === 'employee';
+  const isManager  = role === 'manager';
+  const isAdmin    = role === 'admin';
+
+  // Danh sách nhân viên được chọn khi giao việc, lọc theo role
+  const assigneeList = isAdmin
+    ? employees
+    : isManager
+      ? employees.filter(e => e.id === myEmployeeId || mySubordinateIds.includes(e.id))
+      : myEmployee ? [myEmployee] : [];
+
+  // Employee: tự động gán cho chính mình, không cho đổi
+  const lockedAssigneeId = isEmployee ? (myEmployeeId || '') : null;
 
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -316,19 +335,21 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
         })}
       </div>
 
-      {/* Department filter */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={() => setFilterPB('')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!filterPB ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}>
-          Tất cả phòng ban
-        </button>
-        {PHONG_BAN.map(pb => (
-          <button key={pb} onClick={() => setFilterPB(filterPB === pb ? '' : pb)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filterPB === pb ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}>
-            {pb}
+      {/* Department filter — chỉ hiện với admin và manager */}
+      {!isEmployee && (
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setFilterPB('')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${!filterPB ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}>
+            Tất cả phòng ban
           </button>
-        ))}
-      </div>
+          {PHONG_BAN.map(pb => (
+            <button key={pb} onClick={() => setFilterPB(filterPB === pb ? '' : pb)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filterPB === pb ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300 hover:border-orange-300'}`}>
+              {pb}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search + employee filter */}
       <div className="flex gap-3">
@@ -338,11 +359,14 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
             placeholder="Tìm công việc..." value={search} onChange={e => setSearch(e.target.value)} />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X size={14} /></button>}
         </div>
-        <select className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-          value={filterEmp} onChange={e => setFilterEmp(e.target.value)}>
-          <option value="">Tất cả nhân viên</option>
-          {employees.map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
-        </select>
+        {/* Dropdown chọn nhân viên — ẩn với employee (chỉ thấy task của mình) */}
+        {!isEmployee && (
+          <select className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={filterEmp} onChange={e => setFilterEmp(e.target.value)}>
+            <option value="">Tất cả nhân viên</option>
+            {assigneeList.map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
+          </select>
+        )}
       </div>
 
       {/* Task list */}
@@ -411,12 +435,14 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
       {showForm && (
         <Modal title="Tạo công việc mới" onClose={() => setShowForm(false)} size="md">
           <TaskForm customers={customers} employees={employees}
+            assigneeList={assigneeList} lockedAssigneeId={lockedAssigneeId}
             onSubmit={d => { onAdd(d); setShowForm(false); }} onCancel={() => setShowForm(false)} />
         </Modal>
       )}
       {editing && (
         <Modal title="Chỉnh sửa công việc" onClose={() => setEditing(null)} size="md">
           <TaskForm initial={editing} customers={customers} employees={employees}
+            assigneeList={assigneeList} lockedAssigneeId={lockedAssigneeId}
             onSubmit={d => { onUpdate(editing.id, d); setEditing(null); }} onCancel={() => setEditing(null)} />
         </Modal>
       )}

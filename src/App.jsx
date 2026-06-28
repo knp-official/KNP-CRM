@@ -384,6 +384,9 @@ function AppContent() {
                   onUpdate={handleUpdateTask}
                   onDelete={g(deleteTask, p.tasks.del)}
                   myEmployeeId={myEmployeeId}
+                  myEmployee={myEmployee}
+                  mySubordinateIds={mySubordinateIds}
+                  role={role}
                 />
               )}
               {tab === 'quotes' && (

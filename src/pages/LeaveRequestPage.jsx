@@ -312,6 +312,11 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const [tuChoiTarget, setTuChoiTarget] = useState(null); // { id, nguoi_xin_id }
 
   const isAdminOrManager = vaiTro === 'Admin' || vaiTro === 'Quản lý';
+  const coTheeDuyetDon = (don) => {
+    if (vaiTro === 'Admin') return true;
+    if (vaiTro === 'Quản lý') return don.phong_ban === phongBan;
+    return false;
+  };
 
   // Filters
   const [filterStatus,  setFilterStatus]  = useState('all');
@@ -439,7 +444,7 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
                 </div>
 
                 {/* Actions */}
-                {isAdminOrManager && req.trang_thai === 'cho_duyet' && (
+                {isAdminOrManager && req.trang_thai === 'cho_duyet' && coTheeDuyetDon(req) && (
                   <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <button onClick={() => handleDuyet(req)} style={{
                       display: 'flex', alignItems: 'center', gap: '4px',

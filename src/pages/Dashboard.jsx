@@ -259,8 +259,8 @@ export default function Dashboard({ customers, contacts, employees, tasks = [], 
       })()}
 
       {/* ── HIỆU SUẤT NHÂN VIÊN (chỉ admin + manager) ────────────────── */}
-      {role !== 'employee' && tasks.length > 0 && (() => {
-        const visibleEmpIds = role === 'admin'
+      {!['employee', 'Nhân viên'].includes(role) && tasks.length > 0 && (() => {
+        const visibleEmpIds = ['admin', 'Admin'].includes(role)
           ? employees.map(e => e.id)
           : [myEmployeeId, ...mySubordinateIds].filter(Boolean);
 

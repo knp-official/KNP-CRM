@@ -1,5 +1,5 @@
 // Force clear service worker cache khi có version mới
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     const storedVersion = localStorage.getItem('app_version');

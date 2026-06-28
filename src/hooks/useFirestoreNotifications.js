@@ -62,22 +62,31 @@ export function useFirestoreNotifications(userId) {
   async function markRead(id) {
     const n = notifications.find(x => x.id === id);
     if (!n || n._read) return;
+    // Optimistic update — UI phản hồi ngay, không chờ onSnapshot
+    setRaw(prev => prev.map(r => r._fsId === n._fsId ? { ...r, read: true } : r));
     try {
       await updateDoc(doc(db, 'notifications', n._fsId), { read: true });
     } catch (e) {
       console.error('[KNP Notifications] markRead lỗi:', e);
+      // Rollback nếu write thất bại
+      setRaw(prev => prev.map(r => r._fsId === n._fsId ? { ...r, read: false } : r));
     }
   }
 
   async function markAllRead() {
     const unread = notifications.filter(n => !n._read);
     if (!unread.length) return;
+    const unreadFsIds = new Set(unread.map(n => n._fsId));
+    // Optimistic update ngay lập tức
+    setRaw(prev => prev.map(r => unreadFsIds.has(r._fsId) ? { ...r, read: true } : r));
     const batch = writeBatch(db);
     unread.forEach(n => batch.update(doc(db, 'notifications', n._fsId), { read: true }));
     try {
       await batch.commit();
     } catch (e) {
       console.error('[KNP Notifications] markAllRead lỗi:', e);
+      // Rollback nếu batch thất bại
+      setRaw(prev => prev.map(r => unreadFsIds.has(r._fsId) ? { ...r, read: false } : r));
     }
   }
 

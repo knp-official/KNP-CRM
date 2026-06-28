@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { CalendarOff, Plus, X, Check, ChevronDown } from 'lucide-react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
 import useLeaveRequests from '../hooks/useLeaveRequests';
 
 const PRIMARY = '#F15A22';
@@ -464,9 +466,36 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const myName = myEmp?.ho_ten || currentUser?.email || '';
 
   const handleSubmit = async (data) => {
-    await taoDoXinNghi(data);
-    setShowTaoModal(false);
-    showToast('Đã gửi đơn thành công!');
+    const uid = currentUser?.uid;
+    const donData = {
+      ...data,
+      nguoi_xin_id: uid,
+      trang_thai: 'cho_duyet',
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
+    };
+    console.log('[LeaveRequest] submit uid=', uid, 'phongBan=', phongBan, 'data=', donData);
+    try {
+      const ref = await addDoc(collection(db, 'leave_requests'), donData);
+      console.log('[LeaveRequest] saved OK id=', ref.id);
+      // Gửi notification cho người duyệt
+      if (data.nguoi_duyet_id) {
+        await addDoc(collection(db, 'notifications'), {
+          type: 'leave_request',
+          title: 'Đơn xin nghỉ mới',
+          body: `${data.nguoi_xin_ten} xin nghỉ ${data.loai_nghi === 'ngay' ? 'theo ngày' : data.loai_nghi === 'buoi' ? 'theo buổi' : 'theo giờ'}`,
+          userId: data.nguoi_duyet_id,
+          leaveRequestId: ref.id,
+          read: false,
+          created_at: serverTimestamp(),
+        });
+      }
+      setShowTaoModal(false);
+      showToast('Đã gửi đơn thành công!');
+    } catch (err) {
+      console.error('[LeaveRequest] save error:', err.code, err.message);
+      showToast('Lỗi: ' + (err.message || 'Không lưu được đơn'));
+    }
   };
 
   const handleDuyet = async (req) => {

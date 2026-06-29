@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, ClipboardList, Calendar, User, Building2, Edit2, Trash2, X, AlertCircle, CheckCircle2, Clock, Circle, Zap } from 'lucide-react';
 import Modal from '../components/Modal';
 import { sortEmployeesByRole } from '../utils/sortEmployees';
@@ -96,9 +96,14 @@ function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeI
     ? { ...initial, deadline: initial.deadline ? toDatetimeLocal(initial.deadline) : defaultDeadline() }
     : empty
   );
-  const [customHours, setCustomHours] = useState('');
-  const [showCustom, setShowCustom] = useState(false);
   const [dlError, setDlError] = useState('');
+
+  // Real-time clock — tick mỗi giây để đếm ngược deadline
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const set = (f, v) => setForm(p => ({ ...p, [f]: v }));
 
@@ -120,6 +125,29 @@ function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeI
     setDlError('');
     onSubmit({ ...form, deadline: form.deadline ? new Date(form.deadline).toISOString() : '' });
   }
+
+  // Đếm ngược real-time (cập nhật theo `now` mỗi giây)
+  const countdownLabel = useMemo(() => {
+    if (!form.deadline) return null;
+    const deadlineMs = new Date(form.deadline).getTime();
+    if (isNaN(deadlineMs)) return null;
+    const diffMs = deadlineMs - now;
+    const isOvd = diffMs < 0;
+    const abs = Math.abs(diffMs);
+    const days    = Math.floor(abs / 86400000);
+    const hours   = Math.floor((abs % 86400000) / 3600000);
+    const minutes = Math.floor((abs % 3600000) / 60000);
+    const seconds = Math.floor((abs % 60000) / 1000);
+    let text = '';
+    if (days > 0)         text = `${days} ngày ${hours} giờ ${minutes} phút`;
+    else if (hours > 0)   text = `${hours} giờ ${minutes} phút ${seconds} giây`;
+    else if (minutes > 0) text = `${minutes} phút ${seconds} giây`;
+    else                  text = `${seconds} giây`;
+    return {
+      text: isOvd ? `⚠️ Quá hạn ${text}` : `⏱ Còn ${text}`,
+      color: isOvd ? '#DC2626' : days < 1 ? '#D97706' : '#059669',
+    };
+  }, [form.deadline, now]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -171,44 +199,21 @@ function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeI
           <Calendar size={13} className="inline mr-1 -mt-0.5 text-slate-400" />Deadline
         </label>
 
-        {/* Quick hours */}
+        {/* Quick hours — tính từ Date.now() khi bấm */}
         <div className="flex flex-wrap gap-1.5">
           <span className="text-xs text-slate-500 flex items-center gap-1 mr-1">
             <Zap size={11} className="text-orange-400" />Nhanh:
           </span>
           {QUICK_HOURS.map(h => (
             <button key={h} type="button"
-              onClick={() => { applyQuickHours(h); setShowCustom(false); }}
+              onClick={() => applyQuickHours(h)}
               className="px-2 py-0.5 text-xs bg-white border border-slate-300 rounded-full hover:border-orange-400 hover:text-orange-600 transition-colors">
               {h >= 24 ? `${h / 24}ng` : `${h}g`}
             </button>
           ))}
-          <button type="button"
-            onClick={() => setShowCustom(s => !s)}
-            className={`px-2 py-0.5 text-xs border rounded-full transition-colors ${showCustom ? 'bg-orange-500 text-white border-orange-500' : 'bg-white border-slate-300 hover:border-orange-400 hover:text-orange-600'}`}>
-            Tùy chỉnh
-          </button>
         </div>
 
-        {showCustom && (
-          <div className="flex items-center gap-2">
-            <input
-              type="number" min="1" max="720"
-              className="w-24 border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              placeholder="Số giờ"
-              value={customHours}
-              onChange={e => setCustomHours(e.target.value)}
-            />
-            <button type="button"
-              onClick={() => { if (+customHours > 0) { applyQuickHours(+customHours); setShowCustom(false); setCustomHours(''); } }}
-              className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600">
-              Áp dụng
-            </button>
-            <span className="text-xs text-slate-400">giờ kể từ bây giờ</span>
-          </div>
-        )}
-
-        {/* Datetime-local input */}
+        {/* Datetime-local input — click mở native date/time picker */}
         <div>
           <input
             type="datetime-local"
@@ -217,12 +222,11 @@ function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeI
             onChange={e => { set('deadline', e.target.value); setDlError(''); }}
           />
           {dlError && <p className="text-xs text-red-500 mt-1">{dlError}</p>}
-          {form.deadline && !dlError && (() => {
-            const tl = timeLeft(new Date(form.deadline).toISOString());
-            if (!tl) return null;
-            const clr = tl.color === 'red' ? 'text-red-500' : tl.color === 'orange' ? 'text-orange-500' : 'text-emerald-600';
-            return <p className={`text-xs mt-1 font-medium ${clr}`}>{tl.txt}</p>;
-          })()}
+          {countdownLabel && !dlError && (
+            <p style={{ marginTop: 6, fontSize: 13, fontWeight: 500, color: countdownLabel.color }}>
+              {countdownLabel.text}
+            </p>
+          )}
         </div>
       </div>
 

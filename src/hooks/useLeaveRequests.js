@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
@@ -8,44 +8,29 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
   const [error, setError]     = useState(null);
 
   useEffect(() => {
-    console.log('🔍 useLeaveRequests params:', {
-      uid: currentUser?.uid,
-      vaiTro: vaiTro,
-      vaiTroType: typeof vaiTro,
-      phongBan: phongBan,
-    });
+    const uid = currentUser?.uid;
+    const role = (vaiTro || '').toLowerCase().trim();
+    console.log('🔍 useLeaveRequests:', { uid, role, phongBan });
 
-    if (!currentUser?.uid) {
-      console.log('❌ Không có uid → return');
-      setLoading(false);
-      return;
-    }
+    if (!uid) { setLoading(false); return; }
 
     let q;
-    if (vaiTro === 'Admin') {
-      console.log('✅ Vào nhánh Admin - query tất cả');
-      q = query(collection(db, 'leave_requests'));
-    } else if (vaiTro === 'Quản lý') {
-      console.log('✅ Vào nhánh Manager - phong_ban:', phongBan);
-      q = query(
-        collection(db, 'leave_requests'),
-        where('phong_ban', '==', phongBan || '__none__')
-      );
+    if (role === 'admin') {
+      // Admin: lấy tất cả, orderBy không cần where nên không cần composite index
+      q = query(collection(db, 'leave_requests'), orderBy('created_at', 'desc'));
     } else {
-      console.log('⚠️ Vào nhánh Employee - lọc theo uid:', currentUser.uid);
-      q = query(
-        collection(db, 'leave_requests'),
-        where('nguoi_xin_id', '==', currentUser.uid)
-      );
+      // Employee/Manager: chỉ đơn của mình, sort client-side (tránh composite index)
+      q = query(collection(db, 'leave_requests'), where('nguoi_xin_id', '==', uid));
     }
 
     const unsub = onSnapshot(
       q,
       snap => {
-        console.log('📦 Snapshot nhận được:', snap.docs.length, 'documents');
-        snap.docs.forEach(d => console.log('  -', d.id, d.data()));
-        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        data.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+        let data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (role !== 'admin') {
+          data.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+        }
+        console.log('📦 Snapshot:', data.length, 'docs, role:', role);
         setLeaveRequests(data);
         setLoading(false);
         setError(null);
@@ -68,7 +53,6 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
       created_at: serverTimestamp(),
       updated_at: serverTimestamp(),
     });
-
     if (data.nguoi_duyet_id) {
       await addDoc(collection(db, 'notifications'), {
         type: 'leave_request',
@@ -126,7 +110,18 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
     }
   };
 
-  return { leaveRequests, loading, error, taoDoXinNghi, duyetDon, tuChoiDon };
+  const suaDon = async (id, dataMoi) => {
+    await updateDoc(doc(db, 'leave_requests', id), {
+      ...dataMoi,
+      updated_at: serverTimestamp(),
+    });
+  };
+
+  const xoaDon = async (id) => {
+    await deleteDoc(doc(db, 'leave_requests', id));
+  };
+
+  return { leaveRequests, loading, error, taoDoXinNghi, duyetDon, tuChoiDon, suaDon, xoaDon };
 };
 
 export default useLeaveRequests;

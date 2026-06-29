@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-const APP_VERSION = '20260629-leave-fix'
+const APP_VERSION = '20260629-leave-v2'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {

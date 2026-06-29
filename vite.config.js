@@ -14,7 +14,7 @@ export default defineConfig({
         name: 'Kim Ngân Phát CRM',
         short_name: 'KNP CRM',
         description: 'Hệ thống quản lý khách hàng Kim Ngân Phát',
-        version: '20260629-leave-fix',
+        version: '20260629-leave-v2',
         theme_color: '#F15A22',
         background_color: '#F5F6FA',
         display: 'standalone',

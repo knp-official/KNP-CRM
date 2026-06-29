@@ -161,8 +161,11 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
 
   const maxDebt = custDebt[0]?.total || 1;
 
-  // Tasks by employee
-  const empTasks = employees.map(e => ({
+  // Tasks by employee — loại bỏ Admin khỏi bảng ranking
+  const empTasks = employees.filter(e => {
+    const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
+    return role !== 'admin';
+  }).map(e => ({
     ...e,
     total: tasks.filter(t => t.nhan_vien_id === e.id).length,
     done: tasks.filter(t => t.nhan_vien_id === e.id && t.trang_thai === 'Hoàn thành').length,
@@ -182,7 +185,7 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Báo cáo tổng hợp</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Cập nhật theo dữ liệu thực tế trong hệ thống</p>
+        <p className="text-slate-500 text-sm mt-0.5">Báo cáo công việc nhân viên &amp; quản lý</p>
       </div>
 
       {/* KPI cards */}

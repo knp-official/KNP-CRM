@@ -71,9 +71,13 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
   }).length;
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  // Thống kê từng nhân viên
+  // Thống kê từng nhân viên (loại bỏ Admin khỏi bảng ranking)
   const empStats = useMemo(() => {
-    return employees.map(emp => {
+    const nonAdmin = employees.filter(e => {
+      const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
+      return role !== 'admin';
+    });
+    return nonAdmin.map(emp => {
       const empTasks = filtered.filter(t => t.nhan_vien_id === emp.id);
       const empTotal    = empTasks.length;
       const empDone     = empTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
@@ -104,7 +108,7 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#111827' }}>Hiệu suất nhân viên</h1>
-          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#9CA3AF' }}>Theo dõi năng suất và tiến độ công việc</p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: '#9CA3AF' }}>Bảng xếp hạng hiệu suất nhân viên &amp; quản lý</p>
         </div>
         <select
           value={period}

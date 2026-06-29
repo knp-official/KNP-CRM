@@ -522,23 +522,27 @@ export default function LeaveRequestPage({ currentUser, vaiTro: vaiTroRaw, emplo
   const card = { background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' };
   const cardHdr = { padding: '13px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' };
 
-  /* ── ADMIN VIEW ── duyệt đơn + thống kê toàn công ty ──────────────── */
+  /* ── ADMIN: state + memo phải nằm ngoài if (Rules of Hooks) ──────── */
   const [statusFilter, setStatusFilter] = useState('tat_ca');
+  const thongKeRows = useMemo(
+    () => buildThongKe(leaveRequests, thangFilter, namFilter),
+    [leaveRequests, thangFilter, namFilter]
+  );
 
   if (vaiTro === 'Admin') {
     const donChoDuyet = leaveRequests.filter(d => d.trang_thai === 'cho_duyet');
-    const donDaXuLy   = leaveRequests.filter(d => d.trang_thai !== 'cho_duyet');
+    const donDaXuLy   = leaveRequests.filter(d => d.trang_thai === 'da_duyet' || d.trang_thai === 'tu_choi');
 
-    const donHienThi = statusFilter === 'tat_ca'    ? leaveRequests
-      : statusFilter === 'cho_duyet' ? donChoDuyet
-      : leaveRequests.filter(d => d.trang_thai === statusFilter);
-
-    const thongKeRows = useMemo(
-      () => buildThongKe(leaveRequests, thangFilter, namFilter),
-      [leaveRequests, thangFilter, namFilter]
-    );
+    console.log('📊 Admin view data:', {
+      totalDon: leaveRequests.length,
+      trangThaiList: leaveRequests.map(d => ({ id: d.id, nguoi_xin_ten: d.nguoi_xin_ten, trang_thai: d.trang_thai, trangThaiType: typeof d.trang_thai })),
+    });
+    console.log('🟡 Chờ duyệt:', donChoDuyet.length);
+    console.log('🟢 Đã xử lý:', donDaXuLy.length);
 
     const selStyle = { padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer', background: '#fff' };
+
+    const listS2 = statusFilter === 'tat_ca' ? donDaXuLy : leaveRequests.filter(d => d.trang_thai === statusFilter);
 
     return (
       <div style={wrap}>
@@ -570,47 +574,42 @@ export default function LeaveRequestPage({ currentUser, vaiTro: vaiTroRaw, emplo
           </div>
         </div>
 
-        {/* Section 1 — Đơn chờ duyệt */}
-        {(statusFilter === 'tat_ca' || statusFilter === 'cho_duyet') && donChoDuyet.length > 0 && (
+        {/* Section 1 — Đơn chờ duyệt: LUÔN hiển thị khi filter phù hợp */}
+        {(statusFilter === 'tat_ca' || statusFilter === 'cho_duyet') && (
           <div style={card}>
             <div style={cardHdr}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#D97706' }}>⏳ Chờ duyệt ({donChoDuyet.length})</span>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#D97706' }}>🟡 Đơn chờ duyệt ({donChoDuyet.length})</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
-              {donChoDuyet.map(req => (
-                <DonCard key={req.id} req={req} canApprove={true}
-                  onDuyet={handleDuyet}
-                  onTuChoi={r => setTuChoiTarget({ id: r.id, nguoi_xin_id: r.nguoi_xin_id, nguoi_xin_ten: r.nguoi_xin_ten })}
-                />
-              ))}
-            </div>
+            {donChoDuyet.length === 0
+              ? <div style={{ padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có đơn nào chờ duyệt</div>
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+                  {donChoDuyet.map(req => (
+                    <DonCard key={req.id} req={req} canApprove={true}
+                      onDuyet={handleDuyet}
+                      onTuChoi={r => setTuChoiTarget({ id: r.id, nguoi_xin_id: r.nguoi_xin_id, nguoi_xin_ten: r.nguoi_xin_ten })}
+                    />
+                  ))}
+                </div>
+            }
           </div>
         )}
 
-        {/* Section 2 — Lịch sử đơn đã xử lý */}
-        {statusFilter !== 'cho_duyet' && (
+        {/* Section 2 — Lịch sử đã xử lý: LUÔN hiển thị khi filter phù hợp */}
+        {(statusFilter === 'tat_ca' || statusFilter === 'da_duyet' || statusFilter === 'tu_choi') && (
           <div style={card}>
             <div style={cardHdr}>
               <span style={{ fontSize: '14px', fontWeight: '600', color: TEXT1 }}>
-                {statusFilter === 'tat_ca' ? `Lịch sử đã xử lý (${donDaXuLy.length})` : `Danh sách (${donHienThi.length})`}
+                📋 Lịch sử đã xử lý ({listS2.length})
               </span>
             </div>
-            {donHienThi.filter(d => d.trang_thai !== 'cho_duyet').length === 0 ? (
-              <div style={{ padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có đơn nào</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
-                {(statusFilter === 'tat_ca' ? donDaXuLy : donHienThi).map(req => (
-                  <DonCard key={req.id} req={req} canApprove={false} onDuyet={() => {}} onTuChoi={() => {}} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Nếu filter chờ duyệt mà không có đơn */}
-        {statusFilter === 'cho_duyet' && donChoDuyet.length === 0 && (
-          <div style={{ ...card, padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>
-            Không có đơn nào chờ duyệt
+            {listS2.length === 0
+              ? <div style={{ padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có đơn nào</div>
+              : <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+                  {listS2.map(req => (
+                    <DonCard key={req.id} req={req} canApprove={false} onDuyet={() => {}} onTuChoi={() => {}} />
+                  ))}
+                </div>
+            }
           </div>
         )}
 

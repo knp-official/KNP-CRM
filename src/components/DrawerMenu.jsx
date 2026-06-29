@@ -1,4 +1,4 @@
-import { X, LayoutDashboard, Building2, Users, ClipboardList, TrendingUp, FileText, CreditCard, BarChart2, CalendarOff } from 'lucide-react';
+import { X, LayoutDashboard, Building2, Users, ClipboardList, TrendingUp, FileText, CreditCard, BarChart2, CalendarOff, FileBarChart2 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 
@@ -6,7 +6,8 @@ const TABS = [
   { id: 'dashboard',   label: 'Tổng quan',  icon: LayoutDashboard },
   { id: 'employees',   label: 'Nhân sự',    icon: Users },
   { id: 'tasks',       label: 'Giao việc',    icon: ClipboardList },
-  { id: 'leave',       label: 'Xin nghỉ phép', icon: CalendarOff },
+  { id: 'task-report', label: 'Báo cáo CV',   icon: FileBarChart2 },
+  { id: 'leave',       label: 'Nghỉ phép',    icon: CalendarOff },
   { id: 'performance', label: 'Hiệu suất',    icon: TrendingUp },
   { id: 'customers',   label: 'Khách hàng', icon: Building2 },
   { id: 'quotes',      label: 'Báo giá',    icon: FileText },

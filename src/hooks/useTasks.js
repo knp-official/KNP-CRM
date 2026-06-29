@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 
 function generateId() {
@@ -84,7 +84,14 @@ export function useTasks(role = 'employee', myEmployeeId = null, myUid = null, m
   }
 
   function updateTask(id, data) {
-    updateDoc(doc(db, 'tasks', id), data);
+    const prev = tasks.find(t => t.id === id);
+    const updates = { ...data };
+    if (data.trang_thai === 'Hoàn thành' && prev?.trang_thai !== 'Hoàn thành') {
+      updates.completed_at = serverTimestamp();
+    } else if (prev?.trang_thai === 'Hoàn thành' && data.trang_thai !== 'Hoàn thành') {
+      updates.completed_at = deleteField();
+    }
+    updateDoc(doc(db, 'tasks', id), updates);
   }
 
   function deleteTask(id) {

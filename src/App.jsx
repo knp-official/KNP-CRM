@@ -18,6 +18,7 @@ import DebtsPage from './pages/DebtsPage';
 import ReportsPage from './pages/ReportsPage';
 import PerformancePage from './pages/PerformancePage';
 import LeaveRequestPage from './pages/LeaveRequestPage';
+import TaskDailyReportPage from './pages/TaskDailyReportPage';
 import { useCustomers } from './hooks/useCustomers';
 import { useContacts } from './hooks/useContacts';
 import { useEmployees } from './hooks/useEmployees';
@@ -422,6 +423,14 @@ function AppContent() {
                       onDelete={g(deleteDebt, p.debts.del)}
                     />
                   : <AccessDenied module="Công nợ" />
+              )}
+              {tab === 'task-report' && (
+                <TaskDailyReportPage
+                  tasks={tasks}
+                  employees={employees}
+                  role={role}
+                  myEmployeeId={myEmployeeId}
+                />
               )}
               {tab === 'leave' && (
                 <LeaveRequestPage

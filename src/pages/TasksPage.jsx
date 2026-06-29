@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, ClipboardList, Calendar, User, Building2, Edit2, Trash2, X, AlertCircle, CheckCircle2, Clock, Circle, Zap } from 'lucide-react';
 import Modal from '../components/Modal';
+import { sortEmployeesByRole } from '../utils/sortEmployees';
 import { TRANG_THAI_TASK, UU_TIEN, PHONG_BAN } from '../data/sampleData';
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400';
@@ -139,7 +140,7 @@ function TaskForm({ initial, customers, employees, assigneeList, lockedAssigneeI
             style={lockedAssigneeId ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}}
           >
             <option value="">-- Chọn nhân viên --</option>
-            {(assigneeList || employees).filter(e => e.trang_thai === 'Đang làm việc').map(e =>
+            {sortEmployeesByRole((assigneeList || employees).filter(e => e.trang_thai === 'Đang làm việc')).map(e =>
               <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
           </select>
         </div>
@@ -364,7 +365,7 @@ export default function TasksPage({ tasks, customers, employees, onAdd, onUpdate
           <select className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             value={filterEmp} onChange={e => setFilterEmp(e.target.value)}>
             <option value="">Tất cả nhân viên</option>
-            {assigneeList.map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
+            {sortEmployeesByRole(assigneeList).map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
           </select>
         )}
       </div>

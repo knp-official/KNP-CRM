@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, UserCheck, Phone, Mail, Trash2, X, Calendar, Cake, ChevronDown, Shield, Users, UserPlus } from 'lucide-react';
 import Modal from '../components/Modal';
 import { PHONG_BAN, TRANG_THAI_NV, VAI_TRO_NV } from '../data/sampleData';
+import { sortEmployeesByRole } from '../utils/sortEmployees';
 
 /* ── Design tokens ────────────────────────────────────────────────────── */
 const PRIMARY   = '#F15A22';
@@ -144,7 +145,7 @@ function EmployeeForm({ initial, employees, onSubmit, onCancel, readOnly = false
   const empty = { ho_ten: '', chuc_vu: '', phong_ban: 'Phòng Kinh doanh', vai_tro: 'Nhân viên', quan_ly_id: '', dien_thoai: '', email: '', ngay_vao_lam: '', ngay_sinh: '', trang_thai: 'Đang làm việc', ghi_chu: '' };
   const [form, setForm] = useState(initial || empty);
   const set = (f, v) => { if (!readOnly) setForm(p => ({ ...p, [f]: v })); };
-  const managerOptions = employees.filter(e => e.id !== initial?.id);
+  const managerOptions = sortEmployeesByRole(employees.filter(e => e.id !== initial?.id));
   const dis = readOnly ? { backgroundColor: '#F9FAFB', color: TEXT2, cursor: 'not-allowed', opacity: 0.8 } : {};
 
   return (

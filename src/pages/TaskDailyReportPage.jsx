@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { FileBarChart2, ChevronLeft, ChevronRight, CheckCircle2, Clock, AlertCircle, Plus, User, Calendar } from 'lucide-react';
+import { sortEmployeesByRole } from '../utils/sortEmployees';
 
 const PRIMARY = '#F15A22';
 const TEXT1   = '#1F2937';
@@ -214,16 +215,16 @@ export default function TaskDailyReportPage({ tasks, employees, role, myEmployee
   const adminRows = useMemo(() => {
     if (!isAdmin || selectedEmpId) return [];
     const empSet = new Set(tasks.map(t => t.nhan_vien_id).filter(Boolean));
-    return [...empSet].map(empId => {
+    const rows = [...empSet].map(empId => {
       const emp = employees.find(e => e.id === empId);
       const empTasks = tasks.filter(t => t.nhan_vien_id === empId);
       const c = empTasks.filter(t => { const ca = toFireDate(t.completed_at); return ca && ca >= selDateObj && ca <= selEndObj; }).length;
       const ip = empTasks.filter(t => { if (t.trang_thai !== 'Đang làm') return false; const dl = t.deadline ? new Date(t.deadline) : null; return dl && dl >= selDateObj; }).length;
       const od = empTasks.filter(t => { if (t.trang_thai === 'Hoàn thành') return false; const dl = t.deadline ? new Date(t.deadline) : null; return dl && dl < selDateObj; }).length;
       const nt = empTasks.filter(t => (t.ngay_tao || '').startsWith(selectedDate)).length;
-      return { empId, empName: emp?.ho_ten || '?', completed: c, inProgress: ip, overdue: od, newToday: nt };
-    }).filter(r => r.completed + r.inProgress + r.overdue + r.newToday > 0)
-      .sort((a, b) => b.completed - a.completed);
+      return { empId, empName: emp?.ho_ten || '?', vai_tro: emp?.vai_tro || '', completed: c, inProgress: ip, overdue: od, newToday: nt };
+    }).filter(r => r.completed + r.inProgress + r.overdue + r.newToday > 0);
+    return sortEmployeesByRole(rows);
   }, [isAdmin, selectedEmpId, tasks, employees, selDateObj, selEndObj, selectedDate]);
 
   // ── Nav ─────────────────────────────────────────────────────────────
@@ -280,7 +281,7 @@ export default function TaskDailyReportPage({ tasks, employees, role, myEmployee
           <span style={{ fontSize: '13px', fontWeight: '500', color: TEXT2 }}>Xem theo nhân viên:</span>
           <select value={selectedEmpId} onChange={e => setSelectedEmpId(e.target.value)} style={{ ...selStyle, minWidth: '180px' }}>
             <option value="">Tất cả nhân viên</option>
-            {employees.filter(e => e.trang_thai === 'Đang làm việc' || !e.trang_thai).map(e => (
+            {sortEmployeesByRole(employees.filter(e => e.trang_thai === 'Đang làm việc' || !e.trang_thai)).map(e => (
               <option key={e.id} value={e.id}>{e.ho_ten}</option>
             ))}
           </select>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Search, FileText, Printer, Edit2, Trash2, X } from 'lucide-react';
 import Modal from '../components/Modal';
+import { sortEmployeesByRole } from '../utils/sortEmployees';
 import { TRANG_THAI_BG, SAN_PHAM_BG } from '../data/sampleData';
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400';
@@ -163,7 +164,7 @@ function QuoteForm({ initial, customers, employees, onSubmit, onAddCustomer, onC
           <label className={labelCls}>Người lập báo giá</label>
           <select className={inputCls} value={form.nguoi_lam} onChange={e => setForm(f => ({ ...f, nguoi_lam: e.target.value }))}>
             <option value="">-- Chọn --</option>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
+            {sortEmployeesByRole(employees).map(e => <option key={e.id} value={e.id}>{e.ho_ten}</option>)}
           </select>
         </div>
         <div>

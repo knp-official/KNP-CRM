@@ -24,7 +24,16 @@
       "Bash(node_modules/.bin/vite build *)",
       "Bash(~/.nvm/versions/node/v24.17.0/bin/node ~/.nvm/versions/node/v24.17.0/bin/vite build --root \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM\")",
       "Bash(~/.nvm/versions/node/v24.17.0/bin/node \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM/node_modules/.bin/vite\" build --root \"/Users/admin/Library/Mobile Documents/com~apple~CloudDocs/01. KimNganPhat/KNP CRM\")",
-      "Bash(~/.nvm/versions/node/v24.17.0/bin/node node_modules/.bin/vite build)"
+      "Bash(~/.nvm/versions/node/v24.17.0/bin/node node_modules/.bin/vite build)",
+      "Bash(/Users/admin/.nvm/versions/node/v24.17.0/bin/node --version)",
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ npm install vite-plugin-pwa --save-dev)",
+      "Bash(PATH=/Users/admin/.nvm/versions/node/v24.17.0/bin:__TRACKED_VAR__ node -e ' *)",
+      "Bash(npm install *)",
+      "Bash(git rm *)",
+      "Bash(xargs ls -la)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(python3)"
     ]
   }
 }

@@ -3,6 +3,7 @@ import { CalendarOff, Plus, X, Check, Pencil, Trash2 } from 'lucide-react';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import useLeaveRequests from '../hooks/useLeaveRequests';
+import { sortEmployeesByRole } from '../utils/sortEmployees';
 
 const PRIMARY = '#F15A22';
 const TEXT1   = '#1F2937';
@@ -200,10 +201,10 @@ function DonCard({ req, actions }) {
 /* ── Modal tạo / sửa đơn ─────────────────────────────────────────────── */
 function DonModal({ onClose, onSubmit, currentUser, employees, dangGui = false, editingDon = null }) {
   const myEmp = employees.find(e => e.uid === currentUser?.uid);
-  const nguoiDuyetList = (employees || []).filter(emp => {
+  const nguoiDuyetList = sortEmployeesByRole((employees || []).filter(emp => {
     const vt = (emp.vaiTro || emp.vai_tro || emp.role || '').toLowerCase().trim();
     return vt === 'admin';
-  });
+  }));
 
   const initLoai = editingDon?.loai_nghi || 'ngay';
   const [loai, setLoai] = useState(initLoai);
@@ -410,19 +411,20 @@ export default function LeaveRequestPage({ currentUser, vaiTro: vaiTroRaw, emplo
   const [namFilter,   setNamFilter]   = useState(namNay);
   const thangOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  const thongKeRows = useMemo(
-    () => buildThongKe(leaveRequests, thangFilter > 0 ? thangFilter : null, namFilter),
-    [leaveRequests, thangFilter, namFilter]
-  );
+  const thongKeRows = useMemo(() => {
+    const empByUid = new Map(employees.filter(e => e.uid).map(e => [e.uid, e]));
+    const rows = buildThongKe(leaveRequests, thangFilter > 0 ? thangFilter : null, namFilter);
+    return sortEmployeesByRole(rows.map(r => ({ ...r, vai_tro: empByUid.get(r.id)?.vai_tro || 'Nhân viên' })));
+  }, [leaveRequests, employees, thangFilter, namFilter]);
 
-  const myThongKeRows = useMemo(
-    () => buildThongKe(
+  const myThongKeRows = useMemo(() => {
+    const rows = buildThongKe(
       leaveRequests.filter(d => d.nguoi_xin_id === currentUser?.uid),
       thangFilter > 0 ? thangFilter : null,
       namFilter
-    ),
-    [leaveRequests, currentUser?.uid, thangFilter, namFilter]
-  );
+    );
+    return rows; // chỉ 1 nhân viên → không cần sort theo role
+  }, [leaveRequests, currentUser?.uid, thangFilter, namFilter]);
 
   // ── Derived lists (not hooks) ────────────────────────────────────────
   const donChoDuyet = leaveRequests.filter(d => d.trang_thai === 'cho_duyet');

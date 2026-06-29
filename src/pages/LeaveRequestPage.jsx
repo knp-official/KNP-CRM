@@ -522,42 +522,116 @@ export default function LeaveRequestPage({ currentUser, vaiTro: vaiTroRaw, emplo
   const card = { background: '#fff', border: `1px solid ${BORDER}`, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' };
   const cardHdr = { padding: '13px 16px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' };
 
-  /* ── ADMIN VIEW ── chỉ thống kê toàn công ty ─────────────────────── */
+  /* ── ADMIN VIEW ── duyệt đơn + thống kê toàn công ty ──────────────── */
+  const [statusFilter, setStatusFilter] = useState('tat_ca');
+
   if (vaiTro === 'Admin') {
-    const rows = useMemo(() => buildThongKe(leaveRequests, thangFilter, namFilter), [leaveRequests, thangFilter, namFilter]);
+    const donChoDuyet = leaveRequests.filter(d => d.trang_thai === 'cho_duyet');
+    const donDaXuLy   = leaveRequests.filter(d => d.trang_thai !== 'cho_duyet');
+
+    const donHienThi = statusFilter === 'tat_ca'    ? leaveRequests
+      : statusFilter === 'cho_duyet' ? donChoDuyet
+      : leaveRequests.filter(d => d.trang_thai === statusFilter);
+
+    const thongKeRows = useMemo(
+      () => buildThongKe(leaveRequests, thangFilter, namFilter),
+      [leaveRequests, thangFilter, namFilter]
+    );
+
+    const selStyle = { padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer', background: '#fff' };
 
     return (
       <div style={wrap}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-          <CalendarOff size={22} color={PRIMARY} />
-          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: TEXT1 }}>Thống kê nghỉ phép</h1>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CalendarOff size={22} color={PRIMARY} />
+            <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: TEXT1 }}>Quản lý nghỉ phép</h1>
+            {donChoDuyet.length > 0 && (
+              <span style={{ background: '#FEF3C7', color: '#D97706', fontSize: '12px', fontWeight: '700', padding: '3px 10px', borderRadius: '10px' }}>
+                {donChoDuyet.length} chờ duyệt
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={selStyle}>
+              <option value="tat_ca">Tất cả</option>
+              <option value="cho_duyet">Chờ duyệt</option>
+              <option value="da_duyet">Đã duyệt</option>
+              <option value="tu_choi">Từ chối</option>
+            </select>
+            <select value={thangFilter} onChange={e => setThangFilter(Number(e.target.value))} style={selStyle}>
+              <option value={0}>Tất cả tháng</option>
+              {thangOptions.map(t => <option key={t} value={t}>Tháng {t}</option>)}
+            </select>
+            <select value={namFilter} onChange={e => setNamFilter(Number(e.target.value))} style={selStyle}>
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
         </div>
 
+        {/* Section 1 — Đơn chờ duyệt */}
+        {(statusFilter === 'tat_ca' || statusFilter === 'cho_duyet') && donChoDuyet.length > 0 && (
+          <div style={card}>
+            <div style={cardHdr}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#D97706' }}>⏳ Chờ duyệt ({donChoDuyet.length})</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+              {donChoDuyet.map(req => (
+                <DonCard key={req.id} req={req} canApprove={true}
+                  onDuyet={handleDuyet}
+                  onTuChoi={r => setTuChoiTarget({ id: r.id, nguoi_xin_id: r.nguoi_xin_id, nguoi_xin_ten: r.nguoi_xin_ten })}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section 2 — Lịch sử đơn đã xử lý */}
+        {statusFilter !== 'cho_duyet' && (
+          <div style={card}>
+            <div style={cardHdr}>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: TEXT1 }}>
+                {statusFilter === 'tat_ca' ? `Lịch sử đã xử lý (${donDaXuLy.length})` : `Danh sách (${donHienThi.length})`}
+              </span>
+            </div>
+            {donHienThi.filter(d => d.trang_thai !== 'cho_duyet').length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có đơn nào</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+                {(statusFilter === 'tat_ca' ? donDaXuLy : donHienThi).map(req => (
+                  <DonCard key={req.id} req={req} canApprove={false} onDuyet={() => {}} onTuChoi={() => {}} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Nếu filter chờ duyệt mà không có đơn */}
+        {statusFilter === 'cho_duyet' && donChoDuyet.length === 0 && (
+          <div style={{ ...card, padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>
+            Không có đơn nào chờ duyệt
+          </div>
+        )}
+
+        {/* Section 3 — Thống kê tháng */}
         <div style={card}>
           <div style={cardHdr}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '15px' }}>📅</span>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: TEXT1 }}>Toàn công ty</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select value={thangFilter} onChange={e => setThangFilter(Number(e.target.value))}
-                style={{ padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer' }}>
-                {thangOptions.map(t => <option key={t} value={t}>Tháng {t}</option>)}
-              </select>
-              <select value={namFilter} onChange={e => setNamFilter(Number(e.target.value))}
-                style={{ padding: '5px 10px', borderRadius: '6px', border: `1px solid ${BORDER}`, fontSize: '13px', color: TEXT1, cursor: 'pointer' }}>
-                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: TEXT1 }}>📊 Thống kê tháng {thangFilter > 0 ? `${thangFilter}/` : ''}{namFilter}</span>
+            <span style={{ fontSize: '11px', color: TEXT2 }}>Chỉ tính đơn đã duyệt</span>
           </div>
-          {rows.length === 0
-            ? <div style={{ padding: '32px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có dữ liệu tháng {thangFilter}/{namFilter}</div>
-            : <ThongKeTable rows={rows} label="Tổng công ty" />
+          {thongKeRows.length === 0
+            ? <div style={{ padding: '24px', textAlign: 'center', color: TEXT2, fontSize: '13px' }}>Không có dữ liệu</div>
+            : <ThongKeTable rows={thongKeRows} label="Tổng công ty" />
           }
           <div style={{ padding: '7px 16px', background: '#F0F9FF', borderTop: `1px solid ${BORDER}`, fontSize: '11px', color: TEXT2 }}>
-            * Quy đổi: 1 ngày = 2 buổi = 8 giờ · Chỉ tính đơn đã được duyệt
+            * Quy đổi: 1 ngày = 2 buổi = 8 giờ
           </div>
         </div>
+
+        {tuChoiTarget && (
+          <TuChoiModal onClose={() => setTuChoiTarget(null)} onConfirm={handleTuChoi} />
+        )}
         <Toast msg={toast} />
       </div>
     );

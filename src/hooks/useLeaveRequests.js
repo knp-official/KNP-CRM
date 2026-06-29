@@ -8,25 +8,31 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
   const [error, setError]     = useState(null);
 
   useEffect(() => {
-    console.log('=== useLeaveRequests ===');
-    console.log('uid:', currentUser?.uid);
-    console.log('vaiTro RAW:', vaiTro);
-    console.log('vaiTro lowercase:', (vaiTro || '').toLowerCase().trim());
-    if (!currentUser?.uid) { setLoading(false); return; }
+    console.log('🔍 useLeaveRequests params:', {
+      uid: currentUser?.uid,
+      vaiTro: vaiTro,
+      vaiTroType: typeof vaiTro,
+      phongBan: phongBan,
+    });
+
+    if (!currentUser?.uid) {
+      console.log('❌ Không có uid → return');
+      setLoading(false);
+      return;
+    }
 
     let q;
-    const role = (vaiTro || currentUser?.vaiTro || currentUser?.vai_tro || '').toLowerCase().trim();
-    console.log('role computed:', role);
-    if (role === 'admin') {
-      console.log('Admin query: ALL documents');
-      // Lấy tất cả đơn, không filter
+    if (vaiTro === 'Admin') {
+      console.log('✅ Vào nhánh Admin - query tất cả');
       q = query(collection(db, 'leave_requests'));
-    } else if (role === 'quản lý' || role === 'manager') {
+    } else if (vaiTro === 'Quản lý') {
+      console.log('✅ Vào nhánh Manager - phong_ban:', phongBan);
       q = query(
         collection(db, 'leave_requests'),
         where('phong_ban', '==', phongBan || '__none__')
       );
     } else {
+      console.log('⚠️ Vào nhánh Employee - lọc theo uid:', currentUser.uid);
       q = query(
         collection(db, 'leave_requests'),
         where('nguoi_xin_id', '==', currentUser.uid)
@@ -36,15 +42,16 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
     const unsub = onSnapshot(
       q,
       snap => {
+        console.log('📦 Snapshot nhận được:', snap.docs.length, 'documents');
+        snap.docs.forEach(d => console.log('  -', d.id, d.data()));
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Sort client-side theo thời gian tạo mới nhất
         data.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
         setLeaveRequests(data);
         setLoading(false);
         setError(null);
       },
       err => {
-        console.error('[useLeaveRequests] Firestore error:', err.code, err.message);
+        console.error('❌ onSnapshot error:', err.code, err.message);
         setError(err.message);
         setLoading(false);
       }

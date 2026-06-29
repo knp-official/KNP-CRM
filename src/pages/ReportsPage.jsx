@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { BarChart3, TrendingUp, Users, CheckCircle2, AlertCircle, Wallet, Building2, UserCheck } from 'lucide-react';
 import { PHONG_BAN } from '../data/sampleData';
 
@@ -56,7 +57,6 @@ function PersonalReportView({ customers, tasks, myEmployeeId, myUid }) {
       <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#414042', margin: '0 0 4px' }}>Hiệu suất cá nhân</h1>
       <p style={{ fontSize: '13px', color: '#AAAAAA', margin: '0 0 24px' }}>Chỉ thống kê công việc và khách hàng của bạn</p>
 
-      {/* KPI row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         {[
           { icon: '📋', label: 'Tổng công việc', value: total, sub: `${done} hoàn thành`, accent: '#F15A22' },
@@ -73,7 +73,6 @@ function PersonalReportView({ customers, tasks, myEmployeeId, myUid }) {
         ))}
       </div>
 
-      {/* Task breakdown */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div style={card}>
           <p style={{ fontSize: '14px', fontWeight: '700', color: '#414042', margin: '0 0 16px' }}>📊 Tình trạng công việc</p>
@@ -81,11 +80,11 @@ function PersonalReportView({ customers, tasks, myEmployeeId, myUid }) {
             <p style={{ fontSize: '13px', color: '#AAAAAA', textAlign: 'center', padding: '16px 0' }}>Chưa có công việc nào</p>
           ) : (
             [
-              { label: 'Hoàn thành', value: done, color: '#059669', bg: '#ECFDF5' },
-              { label: 'Đang làm', value: inProg, color: '#2563EB', bg: '#EFF6FF' },
-              { label: 'Quá hạn', value: overdue, color: '#DC2626', bg: '#FEF2F2' },
-              { label: 'Chưa làm', value: total - done - inProg - overdue, color: '#64748B', bg: '#F8FAFC' },
-            ].map(({ label, value, color, bg }) => (
+              { label: 'Hoàn thành', value: done, color: '#059669' },
+              { label: 'Đang làm', value: inProg, color: '#2563EB' },
+              { label: 'Quá hạn', value: overdue, color: '#DC2626' },
+              { label: 'Chưa làm', value: total - done - inProg - overdue, color: '#64748B' },
+            ].map(({ label, value, color }) => (
               <div key={label} style={{ marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span style={{ fontSize: '13px', color: '#555' }}>{label}</span>
@@ -128,51 +127,65 @@ function PersonalReportView({ customers, tasks, myEmployeeId, myUid }) {
 }
 
 export default function ReportsPage({ customers, contacts, employees, tasks, quotes, debts, isEmployeeView, myEmployeeId, myUid }) {
+  // ── Lọc Admin — PHẢI ở top level trước early return (Rules of Hooks) ──
+  const nonAdminUids = useMemo(() => new Set(
+    employees
+      .filter(e => (e.vai_tro || e.vaiTro || '').toLowerCase().trim() !== 'admin')
+      .map(e => e.id)
+  ), [employees]);
+
+  const nonAdminEmployees = useMemo(
+    () => employees.filter(e => nonAdminUids.has(e.id)),
+    [employees, nonAdminUids]
+  );
+
+  const nonAdminTasks = useMemo(
+    () => tasks.filter(t => nonAdminUids.has(t.nhan_vien_id)),
+    [tasks, nonAdminUids]
+  );
+
   if (isEmployeeView) {
     return <PersonalReportView customers={customers} tasks={tasks} myEmployeeId={myEmployeeId} myUid={myUid} />;
   }
+
   const today = new Date().toISOString().split('T')[0];
-  const currentMonth = today.slice(0, 7);
 
-  // Task stats
-  const taskDone = tasks.filter(t => t.trang_thai === 'Hoàn thành').length;
-  const taskOverdue = tasks.filter(t => t.trang_thai === 'Quá hạn').length;
-  const taskPending = tasks.filter(t => t.trang_thai === 'Chưa làm' || t.trang_thai === 'Đang làm').length;
+  // Task stats — trên nonAdminTasks
+  const taskDone    = nonAdminTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
+  const taskOverdue = nonAdminTasks.filter(t => t.trang_thai === 'Quá hạn').length;
+  const taskPending = nonAdminTasks.filter(t => t.trang_thai === 'Chưa làm' || t.trang_thai === 'Đang làm').length;
 
-  // Debt stats
-  const totalRevenue = debts.reduce((s, d) => s + (+d.so_tien || 0), 0);
+  // Debt stats (toàn công ty, không lọc theo nhân viên)
+  const totalRevenue   = debts.reduce((s, d) => s + (+d.so_tien || 0), 0);
   const totalCollected = debts.reduce((s, d) => s + (+d.da_thanh_toan || 0), 0);
-  const totalOwed = totalRevenue - totalCollected;
-  const overdueDebt = debts.filter(d => d.ngay_den_han < today && d.trang_thai !== 'Đã thanh toán')
+  const totalOwed      = totalRevenue - totalCollected;
+  const overdueDebt    = debts
+    .filter(d => d.ngay_den_han < today && d.trang_thai !== 'Đã thanh toán')
     .reduce((s, d) => s + ((+d.so_tien || 0) - (+d.da_thanh_toan || 0)), 0);
 
   // Quote stats
-  const quoteWon = quotes.filter(q => q.trang_thai === 'Thắng').length;
-  const quoteLost = quotes.filter(q => q.trang_thai === 'Thua').length;
+  const quoteWon   = quotes.filter(q => q.trang_thai === 'Thắng').length;
+  const quoteLost  = quotes.filter(q => q.trang_thai === 'Thua').length;
   const quoteTotal = quotes.filter(q => q.trang_thai === 'Thắng' || q.trang_thai === 'Thua').length;
-  const winRate = quoteTotal > 0 ? Math.round((quoteWon / quoteTotal) * 100) : 0;
+  const winRate    = quoteTotal > 0 ? Math.round((quoteWon / quoteTotal) * 100) : 0;
 
-  // Top customers by debt
+  // Top customers by debt (toàn công ty)
   const custDebt = customers.map(c => {
     const total = debts.filter(d => d.khach_hang_id === c.id).reduce((s, d) => s + (+d.so_tien || 0), 0);
-    const paid = debts.filter(d => d.khach_hang_id === c.id).reduce((s, d) => s + (+d.da_thanh_toan || 0), 0);
+    const paid  = debts.filter(d => d.khach_hang_id === c.id).reduce((s, d) => s + (+d.da_thanh_toan || 0), 0);
     return { ...c, total, owed: total - paid };
   }).filter(c => c.total > 0).sort((a, b) => b.total - a.total).slice(0, 5);
-
   const maxDebt = custDebt[0]?.total || 1;
 
-  // Tasks by employee — loại bỏ Admin khỏi bảng ranking
-  const empTasks = employees.filter(e => {
-    const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
-    return role !== 'admin';
-  }).map(e => ({
+  // Tasks by employee — nonAdminEmployees × nonAdminTasks
+  const empTasks = nonAdminEmployees.map(e => ({
     ...e,
-    total: tasks.filter(t => t.nhan_vien_id === e.id).length,
-    done: tasks.filter(t => t.nhan_vien_id === e.id && t.trang_thai === 'Hoàn thành').length,
+    total: nonAdminTasks.filter(t => t.nhan_vien_id === e.id).length,
+    done:  nonAdminTasks.filter(t => t.nhan_vien_id === e.id && t.trang_thai === 'Hoàn thành').length,
   })).filter(e => e.total > 0).sort((a, b) => b.total - a.total);
   const maxTasks = empTasks[0]?.total || 1;
 
-  // Monthly debt by quote creation date (simulate monthly revenue from quotes)
+  // Monthly revenue from quotes
   const monthlyData = {};
   quotes.forEach(q => {
     const m = q.ngay_tao?.slice(0, 7);
@@ -197,16 +210,16 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {/* Task overview */}
+        {/* Task overview — nonAdminTasks */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <CheckCircle2 size={16} className="text-emerald-500" /> Tình trạng công việc
           </h3>
           <div className="space-y-4">
             {[
-              { label: 'Hoàn thành', value: taskDone, color: 'bg-emerald-400' },
+              { label: 'Hoàn thành', value: taskDone,    color: 'bg-emerald-400' },
               { label: 'Đang xử lý', value: taskPending, color: 'bg-blue-400' },
-              { label: 'Quá hạn', value: taskOverdue, color: 'bg-red-400' },
+              { label: 'Quá hạn',    value: taskOverdue, color: 'bg-red-400' },
             ].map(({ label, value, color }) => (
               <div key={label}>
                 <div className="flex justify-between text-sm mb-1">
@@ -214,11 +227,11 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
                   <span className="font-bold text-slate-900">{value}</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full">
-                  <div className={`h-2 rounded-full ${color}`} style={{ width: tasks.length ? `${(value / tasks.length) * 100}%` : '0%' }} />
+                  <div className={`h-2 rounded-full ${color}`} style={{ width: nonAdminTasks.length ? `${(value / nonAdminTasks.length) * 100}%` : '0%' }} />
                 </div>
               </div>
             ))}
-            <p className="text-xs text-slate-400 text-center pt-1">Tổng {tasks.length} công việc</p>
+            <p className="text-xs text-slate-400 text-center pt-1">Tổng {nonAdminTasks.length} công việc</p>
           </div>
         </div>
 
@@ -229,7 +242,7 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
           </h3>
           <div className="space-y-3">
             {['Chưa thanh toán', 'Thanh toán một phần', 'Đã thanh toán', 'Quá hạn'].map(s => {
-              const count = debts.filter(d => d.trang_thai === s).length;
+              const count  = debts.filter(d => d.trang_thai === s).length;
               const amount = debts.filter(d => d.trang_thai === s).reduce((sum, d) => sum + (+d.so_tien || 0), 0);
               return (
                 <div key={s} className="flex justify-between items-center text-sm">
@@ -282,17 +295,17 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
         </div>
       )}
 
-      {/* Department stats */}
+      {/* Department stats — nonAdminEmployees × nonAdminTasks */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
         <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <UserCheck size={16} className="text-orange-500" /> Nhân viên & công việc theo phòng ban
+          <UserCheck size={16} className="text-orange-500" /> Nhân viên &amp; công việc theo phòng ban
         </h3>
         <div className="grid grid-cols-3 gap-4">
           {PHONG_BAN.map(pb => {
-            const empInPB = employees.filter(e => e.phong_ban === pb && e.trang_thai === 'Đang làm việc');
-            const empIds = empInPB.map(e => e.id);
-            const pbTasks = tasks.filter(t => empIds.includes(t.nhan_vien_id));
-            const pbDone = pbTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
+            const empInPB = nonAdminEmployees.filter(e => e.phong_ban === pb && e.trang_thai === 'Đang làm việc');
+            const empIds  = empInPB.map(e => e.id);
+            const pbTasks = nonAdminTasks.filter(t => empIds.includes(t.nhan_vien_id));
+            const pbDone  = pbTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
             return (
               <div key={pb} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <p className="text-sm font-semibold text-slate-800 mb-3">{pb}</p>
@@ -347,7 +360,7 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
           )}
         </div>
 
-        {/* Tasks by employee */}
+        {/* Tasks by employee — nonAdminEmployees × nonAdminTasks */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Users size={16} className="text-blue-500" /> Công việc theo nhân viên

@@ -22,7 +22,7 @@ function getRange(period) {
     const q = Math.floor(now.getMonth() / 3);
     return new Date(now.getFullYear(), q * 3, 1);
   }
-  return null; // tất cả
+  return null;
 }
 
 function getEnd(period) {
@@ -53,9 +53,27 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
   const since = getRange(period);
   const until = getEnd(period);
 
+  // ── Lọc Admin ra khỏi mọi tính toán (Rules of Hooks: top level) ──
+  const nonAdminUids = useMemo(() => new Set(
+    employees
+      .filter(e => (e.vai_tro || e.vaiTro || '').toLowerCase().trim() !== 'admin')
+      .map(e => e.id)
+  ), [employees]);
+
+  const nonAdminEmployees = useMemo(
+    () => employees.filter(e => nonAdminUids.has(e.id)),
+    [employees, nonAdminUids]
+  );
+
+  const nonAdminTasks = useMemo(
+    () => tasks.filter(t => nonAdminUids.has(t.nhan_vien_id)),
+    [tasks, nonAdminUids]
+  );
+
+  // Lọc theo kỳ — chỉ trên nonAdminTasks
   const filtered = useMemo(
-    () => tasks.filter(t => inRange(t, since, until)),
-    [tasks, period]
+    () => nonAdminTasks.filter(t => inRange(t, since, until)),
+    [nonAdminTasks, period]
   );
 
   const total      = filtered.length;
@@ -71,28 +89,24 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
   }).length;
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  // Thống kê từng nhân viên (loại bỏ Admin khỏi bảng ranking)
+  // Bảng ranking — nonAdminEmployees × filtered (đã non-admin)
   const empStats = useMemo(() => {
-    const nonAdmin = employees.filter(e => {
-      const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
-      return role !== 'admin';
-    });
-    return nonAdmin.map(emp => {
-      const empTasks = filtered.filter(t => t.nhan_vien_id === emp.id);
-      const empTotal    = empTasks.length;
-      const empDone     = empTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
-      const empOverdue  = empTasks.filter(isOverdue).length;
-      const empRate     = empTotal > 0 ? Math.round((empDone / empTotal) * 100) : 0;
+    return nonAdminEmployees.map(emp => {
+      const empTasks   = filtered.filter(t => t.nhan_vien_id === emp.id);
+      const empTotal   = empTasks.length;
+      const empDone    = empTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
+      const empOverdue = empTasks.filter(isOverdue).length;
+      const empRate    = empTotal > 0 ? Math.round((empDone / empTotal) * 100) : 0;
       return { emp, empTotal, empDone, empOverdue, empRate };
     }).filter(s => s.empTotal > 0)
       .sort((a, b) => b.empRate - a.empRate || b.empTotal - a.empTotal);
-  }, [employees, filtered]);
+  }, [nonAdminEmployees, filtered]);
 
   const PERIODS = [
-    { value: 'this_month',  label: 'Tháng này' },
-    { value: 'last_month',  label: 'Tháng trước' },
+    { value: 'this_month',   label: 'Tháng này' },
+    { value: 'last_month',   label: 'Tháng trước' },
     { value: 'this_quarter', label: 'Quý này' },
-    { value: 'all',         label: 'Tất cả' },
+    { value: 'all',          label: 'Tất cả' },
   ];
 
   const statCards = [
@@ -123,7 +137,7 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
         </select>
       </div>
 
-      {/* Section 1 — Stat cards */}
+      {/* Section 1 — Stat cards (tính trên nonAdminTasks → filtered) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
         {statCards.map(({ label, value, color, icon: Icon }) => (
           <div key={label} style={CARD_STYLE}>
@@ -138,7 +152,7 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
         ))}
       </div>
 
-      {/* Section 2 — Bảng nhân viên */}
+      {/* Section 2 — Bảng nhân viên (nonAdminEmployees × nonAdminTasks) */}
       <div style={CARD_STYLE}>
         <h2 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 600, color: '#111827' }}>Hiệu suất từng nhân viên</h2>
         {empStats.length === 0 ? (

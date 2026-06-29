@@ -130,7 +130,11 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
   // ── Lọc Admin — PHẢI ở top level trước early return (Rules of Hooks) ──
   const nonAdminUids = useMemo(() => new Set(
     employees
-      .filter(e => (e.vai_tro || e.vaiTro || '').toLowerCase().trim() !== 'admin')
+      .filter(e => {
+        const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
+        const phongBan = (e.phong_ban || e.phongBan || '').toLowerCase().trim();
+        return role !== 'admin' && phongBan !== 'ban giám đốc';
+      })
       .map(e => e.id)
   ), [employees]);
 
@@ -182,8 +186,8 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
     ...e,
     total: nonAdminTasks.filter(t => t.nhan_vien_id === e.id).length,
     done:  nonAdminTasks.filter(t => t.nhan_vien_id === e.id && t.trang_thai === 'Hoàn thành').length,
-  })).filter(e => e.total > 0).sort((a, b) => b.total - a.total);
-  const maxTasks = empTasks[0]?.total || 1;
+  })).sort((a, b) => b.total - a.total);
+  const maxTasks = Math.max(...empTasks.map(e => e.total), 1);
 
   // Monthly revenue from quotes
   const monthlyData = {};
@@ -371,7 +375,9 @@ export default function ReportsPage({ customers, contacts, employees, tasks, quo
                 <div key={e.id}>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-700 font-medium">{e.ho_ten}</span>
-                    <span className="text-slate-500 text-xs">{e.done}/{e.total} hoàn thành</span>
+                    <span className="text-slate-500 text-xs">
+                      {e.total === 0 ? '—' : `${e.done}/${e.total} hoàn thành`}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="flex-1 bg-slate-100 rounded-full h-1.5 relative">

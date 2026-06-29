@@ -56,7 +56,11 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
   // ── Lọc Admin ra khỏi mọi tính toán (Rules of Hooks: top level) ──
   const nonAdminUids = useMemo(() => new Set(
     employees
-      .filter(e => (e.vai_tro || e.vaiTro || '').toLowerCase().trim() !== 'admin')
+      .filter(e => {
+        const role = (e.vai_tro || e.vaiTro || '').toLowerCase().trim();
+        const phongBan = (e.phong_ban || e.phongBan || '').toLowerCase().trim();
+        return role !== 'admin' && phongBan !== 'ban giám đốc';
+      })
       .map(e => e.id)
   ), [employees]);
 
@@ -96,10 +100,14 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
       const empTotal   = empTasks.length;
       const empDone    = empTasks.filter(t => t.trang_thai === 'Hoàn thành').length;
       const empOverdue = empTasks.filter(isOverdue).length;
-      const empRate    = empTotal > 0 ? Math.round((empDone / empTotal) * 100) : 0;
+      const empRate    = empTotal > 0 ? Math.round((empDone / empTotal) * 100) : null;
       return { emp, empTotal, empDone, empOverdue, empRate };
-    }).filter(s => s.empTotal > 0)
-      .sort((a, b) => b.empRate - a.empRate || b.empTotal - a.empTotal);
+    }).sort((a, b) => {
+      const ra = a.empRate ?? -1;
+      const rb = b.empRate ?? -1;
+      if (rb !== ra) return rb - ra;
+      return b.empTotal - a.empTotal;
+    });
   }, [nonAdminEmployees, filtered]);
 
   const PERIODS = [
@@ -191,12 +199,19 @@ export default function PerformancePage({ tasks = [], employees = [] }) {
                     <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 600, color: '#059669', textAlign: 'left' }}>{empDone}</td>
                     <td style={{ padding: '12px 12px', fontSize: 13, fontWeight: 600, color: empOverdue > 0 ? '#DC2626' : '#9CA3AF', textAlign: 'left' }}>{empOverdue}</td>
                     <td style={{ padding: '12px 12px', minWidth: 120 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-                        <div style={{ flex: 1, height: 6, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden', minWidth: 60 }}>
-                          <div style={{ width: `${empRate}%`, height: '100%', background: empRate >= 80 ? '#059669' : empRate >= 50 ? ACCENT : '#DC2626', borderRadius: 99, transition: 'width 0.4s ease' }} />
+                      {empRate === null ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                          <div style={{ flex: 1, height: 6, background: '#f3f4f6', borderRadius: 99, minWidth: 60 }} />
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#9CA3AF', whiteSpace: 'nowrap' }}>—</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{empRate}%</span>
-                      </div>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                          <div style={{ flex: 1, height: 6, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden', minWidth: 60 }}>
+                            <div style={{ width: `${empRate}%`, height: '100%', background: empRate >= 80 ? '#059669' : empRate >= 50 ? ACCENT : '#DC2626', borderRadius: 99, transition: 'width 0.4s ease' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>{empRate}%</span>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

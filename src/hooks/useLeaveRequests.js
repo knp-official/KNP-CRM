@@ -11,10 +11,11 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
     if (!currentUser?.uid) { setLoading(false); return; }
 
     let q;
-    if (vaiTro === 'Admin') {
-      // Không dùng orderBy → không cần composite index
+    const role = (vaiTro || '').toLowerCase().trim();
+    if (role === 'admin') {
+      // Lấy tất cả đơn, không filter
       q = query(collection(db, 'leave_requests'));
-    } else if (vaiTro === 'Quản lý') {
+    } else if (role === 'quản lý' || role === 'manager') {
       q = query(
         collection(db, 'leave_requests'),
         where('phong_ban', '==', phongBan || '__none__')

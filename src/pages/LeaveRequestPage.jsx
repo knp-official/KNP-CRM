@@ -61,7 +61,7 @@ function formatThoiGian(req) {
 }
 
 /* ── Modal tạo đơn ────────────────────────────────────────────────── */
-function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
+function TaoDoModal({ onClose, onSubmit, currentUser, employees, dangGui = false }) {
   const myEmp = employees.find(e => e.uid === currentUser?.uid);
   const manager = myEmp?.quan_ly_id
     ? employees.find(e => e.id === myEmp.quan_ly_id)
@@ -242,11 +242,11 @@ function TaoDoModal({ onClose, onSubmit, currentUser, employees }) {
               padding: '9px 20px', borderRadius: '8px', border: `1px solid ${BORDER}`,
               background: '#fff', color: TEXT1, fontSize: '14px', fontWeight: '500', cursor: 'pointer',
             }}>Hủy</button>
-            <button onClick={handleSubmit} disabled={saving} style={{
+            <button onClick={handleSubmit} disabled={saving || dangGui} style={{
               padding: '9px 20px', borderRadius: '8px', border: 'none',
-              background: saving ? '#ccc' : PRIMARY, color: '#fff',
-              fontSize: '14px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer',
-            }}>{saving ? 'Đang gửi...' : 'Gửi đơn'}</button>
+              background: (saving || dangGui) ? '#ccc' : PRIMARY, color: '#fff',
+              fontSize: '14px', fontWeight: '600', cursor: (saving || dangGui) ? 'not-allowed' : 'pointer',
+            }}>{(saving || dangGui) ? 'Đang gửi...' : 'Gửi đơn'}</button>
           </div>
         </div>
       </div>
@@ -442,7 +442,13 @@ function Toast({ msg }) {
 }
 
 /* ── LeaveRequestPage ──────────────────────────────────────────────── */
-export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
+export default function LeaveRequestPage({ currentUser, vaiTro: vaiTroRaw, employees }) {
+  // Normalize vaiTro: Firestore có thể lưu 'admin'/'manager' (phone login) hoặc 'Admin'/'Quản lý' (Firestore employees)
+  const vaiTroLower = (vaiTroRaw || '').toLowerCase().trim();
+  const vaiTro = vaiTroLower === 'admin' ? 'Admin'
+    : (vaiTroLower === 'quản lý' || vaiTroLower === 'manager') ? 'Quản lý'
+    : 'Nhân viên';
+
   const myEmp    = employees.find(e => e.uid === currentUser?.uid);
   const phongBan = myEmp?.phong_ban || '';
 
@@ -453,6 +459,7 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const [showTaoModal, setShowTaoModal] = useState(false);
   const [tuChoiTarget, setTuChoiTarget] = useState(null);
   const [toast, setToast]               = useState('');
+  const [dangGui, setDangGui]           = useState(false);
 
   const now        = new Date();
   const thangNay   = now.getMonth() + 1;
@@ -466,6 +473,8 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
   const myName = myEmp?.ho_ten || currentUser?.email || '';
 
   const handleSubmit = async (data) => {
+    if (dangGui) return;
+    setDangGui(true);
     const uid = currentUser?.uid;
     const donData = {
       ...data,
@@ -474,10 +483,8 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
       created_at: serverTimestamp(),
       updated_at: serverTimestamp(),
     };
-    console.log('[LeaveRequest] submit uid=', uid, 'phongBan=', phongBan, 'data=', donData);
     try {
       const ref = await addDoc(collection(db, 'leave_requests'), donData);
-      console.log('[LeaveRequest] saved OK id=', ref.id);
       // Gửi notification cho người duyệt
       if (data.nguoi_duyet_id) {
         await addDoc(collection(db, 'notifications'), {
@@ -495,6 +502,8 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
     } catch (err) {
       console.error('[LeaveRequest] save error:', err.code, err.message);
       showToast('Lỗi: ' + (err.message || 'Không lưu được đơn'));
+    } finally {
+      setDangGui(false);
     }
   };
 
@@ -669,7 +678,7 @@ export default function LeaveRequestPage({ currentUser, vaiTro, employees }) {
       )}
 
       {showTaoModal && (
-        <TaoDoModal onClose={() => setShowTaoModal(false)} onSubmit={handleSubmit} currentUser={currentUser} employees={employees} />
+        <TaoDoModal onClose={() => setShowTaoModal(false)} onSubmit={handleSubmit} currentUser={currentUser} employees={employees} dangGui={dangGui} />
       )}
       {tuChoiTarget && (
         <TuChoiModal onClose={() => setTuChoiTarget(null)} onConfirm={handleTuChoi} />

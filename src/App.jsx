@@ -132,7 +132,8 @@ function AppContent() {
   // Derive identity before useTasks so we can pass Firestore-level filters
   const role           = userDoc?.vaiTro || 'employee';
   const isEmployee     = role === 'employee' || role === 'manager';
-  const currentUserUid = userDoc?.uid;
+  // user.uid từ Firebase Auth luôn có khi đã login; userDoc.uid chỉ có nếu phone+PIN login
+  const currentUserUid = user?.uid || userDoc?.uid;
 
   // Match by Firebase UID — phone+PIN users have userDoc.email = '09xx@knp.internal'
   // which doesn't match the real email stored in employees collection.

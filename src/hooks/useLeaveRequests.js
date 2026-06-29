@@ -8,11 +8,17 @@ const useLeaveRequests = (currentUser, vaiTro, phongBan) => {
   const [error, setError]     = useState(null);
 
   useEffect(() => {
+    console.log('=== useLeaveRequests ===');
+    console.log('uid:', currentUser?.uid);
+    console.log('vaiTro RAW:', vaiTro);
+    console.log('vaiTro lowercase:', (vaiTro || '').toLowerCase().trim());
     if (!currentUser?.uid) { setLoading(false); return; }
 
     let q;
-    const role = (vaiTro || '').toLowerCase().trim();
+    const role = (vaiTro || currentUser?.vaiTro || currentUser?.vai_tro || '').toLowerCase().trim();
+    console.log('role computed:', role);
     if (role === 'admin') {
+      console.log('Admin query: ALL documents');
       // Lấy tất cả đơn, không filter
       q = query(collection(db, 'leave_requests'));
     } else if (role === 'quản lý' || role === 'manager') {
